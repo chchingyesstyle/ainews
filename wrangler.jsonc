@@ -17,7 +17,7 @@
     {
       "binding": "DB",
       "database_name": "ainews",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "40750ce6-90d8-4071-927a-79d1c32c38e4",
       "migrations_dir": "migrations"
     }
   ],
