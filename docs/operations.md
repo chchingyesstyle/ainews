@@ -101,7 +101,7 @@ npx wrangler d1 execute ainews --remote --command="SELECT id, slug, category, so
 
 ## 6. D1 ingestion retention
 
-每次 live pipeline run 最多移除 500 條未被引用、非 `published`、且 `discovered_at` 嚴格早於 90 日的 `ingested_items`。任何已發佈的 story 或 digest 都不會被刪除。
+每次 live pipeline run 最多移除 500 條未被引用、`discovered_at` 嚴格早於 90 日，且狀態必須恰好是 `new`、`selected`、`failed` 或 `rejected` 的 `ingested_items`。任何已發佈的 story 或 digest 都不會被刪除。
 
 以以下唯讀查詢監察仍然存在的 stale、未被引用 ingestion rows：
 
