@@ -3,6 +3,7 @@ import type { Env } from "./env";
 import admin from "./routes/admin";
 import { scheduledHandler } from "./scheduled";
 import publicRoutes from "./routes/public";
+import feedRoutes from "./routes/feeds";
 import { getHealth } from "./routes/health";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -13,6 +14,7 @@ app.get("/health", async (c) => {
 });
 
 app.route("/admin", admin);
+app.route("/", feedRoutes);
 app.route("/", publicRoutes);
 
 app.notFound(async (c) => {

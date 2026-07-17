@@ -1,3 +1,4 @@
+import { raw } from "hono/html";
 import type { Child, PropsWithChildren } from "hono/jsx";
 
 import type { Category } from "../db/types";
@@ -17,6 +18,9 @@ export interface LayoutProps extends PropsWithChildren {
   description?: string;
   canonicalUrl?: string;
   activePath?: string;
+  ogType?: "website" | "article";
+  publishedAt?: string | null;
+  articleJsonLd?: string;
 }
 
 function categoryHref(category: Category): string {
@@ -29,6 +33,9 @@ export function renderLayout({
   canonicalUrl = "https://ainews.cchk.uk/",
   activePath = "/",
   children,
+  ogType = "website",
+  publishedAt = null,
+  articleJsonLd,
 }: LayoutProps) {
   const fullTitle = title === SITE_NAME ? title : `${title}｜${SITE_NAME}`;
   return (
@@ -40,6 +47,15 @@ export function renderLayout({
         <meta name="theme-color" content="#f4f0e8" />
         <title>{fullTitle}</title>
         <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:locale" content="zh_HK" />
+        <meta property="og:type" content={ogType} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="AI 新聞．香港" />
+        <meta name="twitter:card" content="summary" />
+        {publishedAt ? <meta property="article:published_time" content={publishedAt} /> : null}
+        {articleJsonLd ? <script type="application/ld+json">{raw(articleJsonLd)}</script> : null}
         <link rel="stylesheet" href="/styles.css" />
         <script src="/client.js" defer></script>
       </head>

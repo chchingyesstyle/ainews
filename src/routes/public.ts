@@ -6,6 +6,7 @@ import { DigestPage } from "../render/pages/digest";
 import { HomePage } from "../render/pages/home";
 import { SearchPage } from "../render/pages/search";
 import { StoryPage } from "../render/pages/story";
+import { renderArticleJsonLd } from "../render/metadata";
 import {
   getLatestPublishedDigest,
   getLatestPublishedStories,
@@ -98,7 +99,9 @@ publicRoutes.get("/story/:slug", async (c) => {
       description: story.summary_zh_hk,
       canonicalUrl: siteUrl(c.env, `/story/${encodeURIComponent(story.slug)}`),
       activePath: "/story",
-      children: StoryPage({ story, related }),
+      children: StoryPage({ story, related }),      ogType: "article",
+      publishedAt: story.published_at,
+      articleJsonLd: renderArticleJsonLd(story, siteUrl(c.env, "/story/" + encodeURIComponent(story.slug))),
     }),
   );
 });

@@ -150,3 +150,13 @@ export async function getPublishedStoriesByIds(
     return story ? [story] : [];
   });
 }
+
+export async function getPublishedDigests(db: D1Database, limit = 5_000): Promise<DigestRecord[]> {
+  const result = await db.prepare("SELECT * FROM digests WHERE status IN ('published', 'partial') ORDER BY digest_date DESC LIMIT ?").bind(Math.min(Math.max(Math.floor(limit), 1), 5_000)).all<DigestRecord>();
+  return result.results;
+}
+
+export async function getPublishedStoriesForSitemap(db: D1Database, limit = 5_000): Promise<StoryRecord[]> {
+  const result = await db.prepare("SELECT * FROM stories WHERE status = 'published' ORDER BY published_at DESC, id DESC LIMIT ?").bind(Math.min(Math.max(Math.floor(limit), 1), 5_000)).all<StoryRecord>();
+  return result.results;
+}
