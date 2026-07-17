@@ -39,4 +39,23 @@ describe("Cloudflare deployment configuration", () => {
     expect(workflow).not.toContain("GITHUB_PAT");
     expect(workflow).not.toContain(".bashrc");
   });
+
+  it("provides Cloudflare credentials to the remote-binding test step", () => {
+    const workflow = file(files.workflow);
+    const testStepStart = workflow.indexOf("      - name: Test");
+    const nextStepStart = workflow.indexOf(
+      "\n      - name:",
+      testStepStart + 1,
+    );
+    const testStep = workflow.slice(testStepStart, nextStepStart);
+
+    expect(testStepStart).toBeGreaterThanOrEqual(0);
+    expect(testStep).toContain("run: npm test");
+    expect(testStep).toContain(
+      "CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}",
+    );
+    expect(testStep).toContain(
+      "CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}",
+    );
+  });
 });
