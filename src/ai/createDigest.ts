@@ -1,4 +1,3 @@
-import type { Ai } from "@cloudflare/workers-types";
 
 import type { DigestAiOutput, DigestStoryInput } from "./contracts";
 import { buildDigestPrompt, DIGEST_SYSTEM_PROMPT } from "./prompts";

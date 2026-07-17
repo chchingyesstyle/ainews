@@ -1,4 +1,3 @@
-import type { Ai } from "@cloudflare/workers-types";
 
 import type { StoryAiOutput } from "./contracts";
 import { buildStoryPrompt, STORY_SYSTEM_PROMPT } from "./prompts";

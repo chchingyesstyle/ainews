@@ -25,6 +25,7 @@ export interface NewSource {
   feedUrl: string;
   defaultCategory: Category;
   language: string;
+  enabled?: number;
 }
 
 export interface IngestedItemRecord {
@@ -39,6 +40,12 @@ export interface IngestedItemRecord {
   title_hash: string;
   status: "new" | "selected" | "published" | "rejected" | "failed";
   last_error: string | null;
+}
+
+export interface IngestedItemWithSource extends IngestedItemRecord {
+  source_name: string;
+  source_priority: number;
+  default_category: Category;
 }
 
 export interface NewIngestedItem {

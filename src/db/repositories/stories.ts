@@ -32,6 +32,20 @@ export async function createStory(db: D1Database, story: NewStory): Promise<numb
   return Number(result.meta.last_row_id);
 }
 
+export async function getStoryById(db: D1Database, storyId: number): Promise<StoryRecord | null> {
+  return db.prepare(`SELECT * FROM stories WHERE id = ?`).bind(storyId).first<StoryRecord>();
+}
+
+export async function getStoryByIngestedItemId(
+  db: D1Database,
+  itemId: number,
+): Promise<StoryRecord | null> {
+  return db
+    .prepare(`SELECT * FROM stories WHERE ingested_item_id = ?`)
+    .bind(itemId)
+    .first<StoryRecord>();
+}
+
 export async function getPublishedStoriesForDigest(
   db: D1Database,
   since: string,

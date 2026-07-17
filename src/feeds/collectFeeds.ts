@@ -63,6 +63,8 @@ export async function collectFromFeeds(
 ): Promise<CollectionResult> {
   const items: FeedItem[] = [];
   const errors: string[] = [];
+  const succeededSourceIds: number[] = [];
+  const failedSourceIds: number[] = [];
   let feedsSucceeded = 0;
 
   for (let index = 0; index < sources.length; index += BATCH_SIZE) {
@@ -70,9 +72,11 @@ export async function collectFromFeeds(
     const results = await Promise.all(batch.map((source) => collectOne(source, fetcher)));
     for (const result of results) {
       if (result.error) {
+        failedSourceIds.push(result.source.id);
         errors.push(result.source.name + ": " + result.error);
       } else {
         feedsSucceeded += 1;
+        succeededSourceIds.push(result.source.id);
         items.push(...result.items);
       }
     }
@@ -81,6 +85,8 @@ export async function collectFromFeeds(
   return {
     feedsAttempted: sources.length,
     feedsSucceeded,
+    succeededSourceIds,
+    failedSourceIds,
     items,
     errors,
   };

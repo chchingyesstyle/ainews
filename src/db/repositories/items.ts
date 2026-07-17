@@ -1,4 +1,4 @@
-import type { IngestedItemRecord, NewIngestedItem } from "../types";
+import type { IngestedItemWithSource, NewIngestedItem } from "../types";
 
 export async function upsertIngestedItem(
   db: D1Database,
@@ -37,13 +37,17 @@ export async function upsertIngestedItem(
 export async function getRecentNewItems(
   db: D1Database,
   since: string,
-): Promise<IngestedItemRecord[]> {
+): Promise<IngestedItemWithSource[]> {
   const result = await db
     .prepare(
-      `SELECT * FROM ingested_items WHERE status = 'new' AND discovered_at >= ? ORDER BY published_at DESC, id DESC`,
+      `SELECT i.*, s.name AS source_name, s.id AS source_priority, s.default_category AS default_category
+       FROM ingested_items i
+       JOIN sources s ON s.id = i.source_id
+       WHERE i.status = 'new' AND i.discovered_at >= ?
+       ORDER BY i.published_at DESC, i.id DESC`,
     )
     .bind(since)
-    .all<IngestedItemRecord>();
+    .all<IngestedItemWithSource>();
   return result.results;
 }
 

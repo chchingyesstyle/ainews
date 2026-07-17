@@ -5,8 +5,8 @@ export async function createSource(db: D1Database, source: NewSource): Promise<n
   const result = await db
     .prepare(
       `INSERT INTO sources
-        (name, publisher_url, feed_url, default_category, language, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (name, publisher_url, feed_url, default_category, language, enabled, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       source.name,
@@ -14,12 +14,23 @@ export async function createSource(db: D1Database, source: NewSource): Promise<n
       source.feedUrl,
       source.defaultCategory,
       source.language,
+      source.enabled ?? 1,
       now,
       now,
     )
     .run();
 
   return Number(result.meta.last_row_id);
+}
+export async function getSourceByFeedUrl(
+  db: D1Database,
+  feedUrl: string,
+): Promise<SourceRecord | null> {
+  return db.prepare(`SELECT * FROM sources WHERE feed_url = ?`).bind(feedUrl).first<SourceRecord>();
+}
+
+export async function getSourceById(db: D1Database, sourceId: number): Promise<SourceRecord | null> {
+  return db.prepare(`SELECT * FROM sources WHERE id = ?`).bind(sourceId).first<SourceRecord>();
 }
 
 export async function getEnabledSources(db: D1Database): Promise<SourceRecord[]> {

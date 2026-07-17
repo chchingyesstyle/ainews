@@ -1,6 +1,10 @@
-import type { SourceRecord } from "../db/types";
+import type { Category, SourceRecord } from "../db/types";
 
 export interface FeedItem {
+  id?: number;
+  sourceName?: string;
+  sourcePriority?: number;
+  defaultCategory?: Category;
   sourceId: number;
   guid: string | null;
   canonicalUrl: string;
@@ -19,6 +23,8 @@ export interface CollectedFeed {
 export interface CollectionResult {
   feedsAttempted: number;
   feedsSucceeded: number;
+  succeededSourceIds: number[];
+  failedSourceIds: number[];
   items: FeedItem[];
   errors: string[];
 }
