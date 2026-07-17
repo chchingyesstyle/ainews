@@ -44,6 +44,24 @@ async function clearDatabase(): Promise<void> {
   ]);
 }
 
+async function insertStaleItem(sourceId: number, key: string): Promise<number> {
+  const result = await env.DB.prepare(
+    `INSERT INTO ingested_items
+      (source_id, guid, canonical_url, title, source_excerpt, published_at, discovered_at, title_hash, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'failed')`,
+  ).bind(
+    sourceId,
+    key,
+    `https://stale.example/${key}`,
+    `Stale ${key}`,
+    "Old excerpt",
+    "2026-03-01T00:00:00.000Z",
+    "2026-03-01T00:00:00.000Z",
+    `stale-${key}`,
+  ).run();
+  return Number(result.meta.last_row_id);
+}
+
 function feedXml(sourceId: number, itemCount = 1): string {
   const items = Array.from({ length: itemCount }, (_, index) => {
     const id = sourceId * 100 + index;
@@ -270,5 +288,89 @@ describe("runDailyPipeline", () => {
       .resolves.toMatchObject({ count: 0 });
     await expect(env.DB.prepare("SELECT COUNT(*) AS count FROM pipeline_runs").first<{ count: number }>())
       .resolves.toMatchObject({ count: 0 });
+  });
+
+  it("prunes stale unreferenced ingestion rows during a live run", async () => {
+    const sourceId = await createSource(env.DB, {
+      name: "Source 1",
+      publisherUrl: "https://publisher.example",
+      feedUrl: "https://feeds.example/source-1.xml",
+      defaultCategory: "模型與研究",
+      language: "en",
+    });
+    const staleId = await insertStaleItem(sourceId, "live");
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("api.gdeltproject.org")) return new Response("<rss><channel></channel></rss>");
+      return new Response(feedXml(1));
+    });
+
+    const result = await runDailyPipeline(testEnv(aiForPipeline()), {
+      date: "2026-07-17",
+      now: new Date("2026-07-17T06:00:00.000Z"),
+      fetcher,
+    });
+
+    expect(result.storiesPublished).toBe(1);
+    await expect(env.DB.prepare("SELECT id FROM ingested_items WHERE id = ?").bind(staleId).first())
+      .resolves.toBeNull();
+  });
+
+  it("does not prune ingestion rows during a dry run", async () => {
+    const sourceId = await createSource(env.DB, {
+      name: "Source 1",
+      publisherUrl: "https://publisher.example",
+      feedUrl: "https://feeds.example/source-1.xml",
+      defaultCategory: "模型與研究",
+      language: "en",
+    });
+    const staleId = await insertStaleItem(sourceId, "dry");
+    const retentionPruner = vi.fn(async () => 1);
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("api.gdeltproject.org")) return new Response("<rss><channel></channel></rss>");
+      return new Response(feedXml(1));
+    });
+
+    await runDailyPipeline(testEnv(aiForPipeline()), {
+      date: "2026-07-17",
+      now: new Date("2026-07-17T06:00:00.000Z"),
+      dryRun: true,
+      fetcher,
+      retentionPruner,
+    });
+
+    expect(retentionPruner).not.toHaveBeenCalled();
+    await expect(env.DB.prepare("SELECT id FROM ingested_items WHERE id = ?").bind(staleId).first())
+      .resolves.toMatchObject({ id: staleId });
+  });
+
+  it("continues publishing when retention cleanup fails", async () => {
+    const retentionPruner = vi.fn().mockRejectedValue(new Error("maintenance unavailable"));
+    await createSource(env.DB, {
+      name: "Source 1",
+      publisherUrl: "https://publisher.example",
+      feedUrl: "https://feeds.example/source-1.xml",
+      defaultCategory: "模型與研究",
+      language: "en",
+    });
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("api.gdeltproject.org")) return new Response("<rss><channel></channel></rss>");
+      return new Response(feedXml(1, 3));
+    });
+
+    const result = await runDailyPipeline(testEnv(aiForPipeline()), {
+      date: "2026-07-17",
+      now: new Date("2026-07-17T06:00:00.000Z"),
+      fetcher,
+      retentionPruner,
+    });
+
+    expect(result.storiesPublished).toBe(3);
+    expect(result.digestId).not.toBeNull();
+    expect(result.status).toBe("partial");
+    expect(result.errors).toContain("Retention cleanup: maintenance unavailable");
+    expect(retentionPruner).toHaveBeenCalledTimes(1);
+    const [calledDb, cutoff] = retentionPruner.mock.calls[0] ?? [];
+    expect(calledDb).toBe(env.DB);
+    expect(cutoff).toBe("2026-04-18T06:00:00.000Z");
   });
 });

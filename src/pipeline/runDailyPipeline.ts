@@ -2,7 +2,12 @@ import type { DigestAiOutput, DigestStoryInput } from "../ai/contracts";
 import { createDigest } from "../ai/createDigest";
 import { collectFromFeeds, collectFromGdelt, type FeedFetcher } from "../feeds/collectFeeds";
 import type { FeedItem } from "../feeds/types";
-import { upsertIngestedItem, getRecentNewItems, markItemSelected } from "../db/repositories/items";
+import {
+  getRecentNewItems,
+  markItemSelected,
+  pruneExpiredUnreferencedItems,
+  upsertIngestedItem,
+} from "../db/repositories/items";
 import { getPublishedStoriesForDigest } from "../db/repositories/stories";
 import { getDigestByDate, replaceDigestStories, upsertDigest } from "../db/repositories/digests";
 import {
@@ -22,6 +27,12 @@ const GDELT_FEED_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
 const GDELT_QUERY = "artificial intelligence OR generative AI OR machine learning";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_ITEMS_TO_INGEST = 200;
+const RETENTION_DAYS = 90;
+
+export type RetentionPruner = (
+  db: D1Database,
+  cutoff: string,
+) => Promise<number>;
 
 export interface PipelineOptions {
   date?: string;
@@ -29,6 +40,7 @@ export interface PipelineOptions {
   now?: Date;
   fetcher?: FeedFetcher;
   gdeltQuery?: string;
+  retentionPruner?: RetentionPruner;
 }
 
 export interface PipelineResult extends RunResult {
@@ -45,6 +57,10 @@ function errorMessage(error: unknown): string {
 
 function sinceFor(date: string): string {
   return new Date(Date.parse(`${date}T00:00:00.000Z`) - DAY_MS).toISOString();
+}
+
+function retentionCutoffFor(now: Date): string {
+  return new Date(now.getTime() - RETENTION_DAYS * DAY_MS).toISOString();
 }
 
 export function limitItemsForIngestion(
@@ -307,6 +323,12 @@ export async function runDailyPipeline(
 
   try {
     runId = await startRun(env.DB, date);
+    try {
+      const pruneItems = options.retentionPruner ?? pruneExpiredUnreferencedItems;
+      await pruneItems(env.DB, retentionCutoffFor(now));
+    } catch (error) {
+      result.errors.push(`Retention cleanup: ${errorMessage(error)}`);
+    }
     const sources = await getEnabledSources(env.DB);
     const fetched = await collectFromFeeds(sources, options.fetcher);
     result.feedsAttempted = fetched.feedsAttempted;
