@@ -6,7 +6,7 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["@cloudflare/workers-types", "vitest/globals"],
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types", "@types/node", "vitest/globals"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
