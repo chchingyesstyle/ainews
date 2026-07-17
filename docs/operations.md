@@ -99,7 +99,17 @@ npx wrangler d1 execute ainews --remote --command="SELECT id, slug, category, so
 
 常見狀態：`completed` 代表文章及 digest 成功；`partial` 代表部分 feed／story／digest 有錯但仍有有效內容；`failed` 代表沒有有效文章或 pipeline 無法完成。AI 失敗會保留 bounded error，不會阻止其他文章繼續。
 
-## 6. GitHub Actions 部署
+## 6. D1 ingestion retention
+
+每次 live pipeline run 最多移除 500 條未被引用、`discovered_at` 嚴格早於 90 日，且狀態必須恰好是 `new`、`selected`、`failed` 或 `rejected` 的 `ingested_items`。任何已發佈的 story 或 digest 都不會被刪除。
+
+以以下唯讀查詢監察仍然存在的 stale、未被引用 ingestion rows：
+
+```bash
+npx wrangler d1 execute ainews --remote --command="SELECT COUNT(*) AS stale_unreferenced_items FROM ingested_items i WHERE i.discovered_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-90 days') AND i.status IN ('new', 'selected', 'failed', 'rejected') AND NOT EXISTS (SELECT 1 FROM stories s WHERE s.ingested_item_id = i.id);"
+```
+
+## 7. GitHub Actions 部署
 
 在 GitHub repository 的 Settings → Secrets and variables → Actions 加入：
 
@@ -108,7 +118,7 @@ npx wrangler d1 execute ainews --remote --command="SELECT id, slug, category, so
 
 Workflow 會在 push 到 `main` 或手動觸發時執行 `npm ci`、typecheck、tests，再執行 `npx wrangler deploy`。API token 應只具備部署所需的最低 Cloudflare 權限；不要加入 `GITHUB_PAT`，也不要從 `.bashrc` 讀 secrets。
 
-## 7. Custom domain
+## 8. Custom domain
 
 `wrangler.jsonc` 已宣告 `ainews.cchk.uk` 為 custom domain。首次 deploy 前，確認 `cchk.uk` 是 Cloudflare active zone，且該 hostname 沒有既有 CNAME 衝突。亦可在 Cloudflare Dashboard 的 Workers & Pages → Worker → Settings → Domains & Routes → Add → Custom Domain 加入 `ainews.cchk.uk`。
 

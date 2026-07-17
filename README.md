@@ -21,6 +21,7 @@
 4. 發佈前驗證每個 AI 欄位；單篇失敗只會記錄 bounded error，不會中止整個批次。
 5. 以已驗證文章建立每日 digest；若 digest AI 輸出不合規，會以已驗證文章資料建立 deterministic partial digest。
 6. 把結果和執行狀態儲存在 D1，再由 Worker 提供公開頁面、RSS 和 sitemap。
+7. 每次 live run 最多移除 500 條未被引用、嚴格早於 90 日，且狀態必須恰好是 `new`、`selected`、`failed` 或 `rejected` 的 ingestion rows；任何已發佈的 story 或 digest 都不會被刪除。
 
 `completed` 表示該批次完整完成；`partial` 表示部分來源、文章或 digest 發生錯誤，但仍有有效內容可發佈；`failed` 表示沒有有效文章或 pipeline 無法完成。
 

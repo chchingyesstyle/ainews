@@ -1,6 +1,7 @@
 import type { IngestedItemWithSource, NewIngestedItem } from "../types";
 
 const MAX_RECENT_NEW_ITEMS = 200;
+const MAX_RETENTION_DELETE_ITEMS = 500;
 
 export async function upsertIngestedItem(
   db: D1Database,
@@ -67,4 +68,30 @@ export async function markItemFailed(db: D1Database, itemId: number, error: stri
     .prepare(`UPDATE ingested_items SET status = 'failed', last_error = ? WHERE id = ?`)
     .bind(error.slice(0, 500), itemId)
     .run();
+}
+
+export async function pruneExpiredUnreferencedItems(
+  db: D1Database,
+  cutoff: string,
+  limit = MAX_RETENTION_DELETE_ITEMS,
+): Promise<number> {
+  const boundedLimit = Math.min(Math.max(Math.floor(limit), 0), MAX_RETENTION_DELETE_ITEMS);
+  if (boundedLimit === 0) return 0;
+
+  const result = await db.prepare(
+    `DELETE FROM ingested_items
+     WHERE id IN (
+       SELECT i.id
+       FROM ingested_items i
+       WHERE i.discovered_at < ?
+         AND i.status IN ('new', 'selected', 'failed', 'rejected')
+         AND NOT EXISTS (
+           SELECT 1 FROM stories s WHERE s.ingested_item_id = i.id
+         )
+       ORDER BY i.discovered_at ASC, i.id ASC
+       LIMIT ?
+     )`,
+  ).bind(cutoff, boundedLimit).run();
+
+  return Number(result.meta.changes ?? 0);
 }
