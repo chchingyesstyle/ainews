@@ -24,6 +24,12 @@
   "ai": {
     "binding": "AI"
   },
+  "routes": [
+    {
+      "pattern": "ainews.cchk.uk",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
