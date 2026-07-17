@@ -21,6 +21,7 @@ import { selectCandidates } from "./selectCandidates";
 const GDELT_FEED_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
 const GDELT_QUERY = "artificial intelligence OR generative AI OR machine learning";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_ITEMS_TO_INGEST = 200;
 
 export interface PipelineOptions {
   date?: string;
@@ -44,6 +45,25 @@ function errorMessage(error: unknown): string {
 
 function sinceFor(date: string): string {
   return new Date(Date.parse(`${date}T00:00:00.000Z`) - DAY_MS).toISOString();
+}
+
+export function limitItemsForIngestion(
+  items: FeedItem[],
+  limit = MAX_ITEMS_TO_INGEST,
+): FeedItem[] {
+  if (limit <= 0 || items.length === 0) return [];
+
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftTime = left.item.publishedAt ? Date.parse(left.item.publishedAt) : 0;
+      const rightTime = right.item.publishedAt ? Date.parse(right.item.publishedAt) : 0;
+      const difference = (Number.isNaN(rightTime) ? 0 : rightTime) -
+        (Number.isNaN(leftTime) ? 0 : leftTime);
+      return difference || left.index - right.index;
+    })
+    .slice(0, limit)
+    .map(({ item }) => item);
 }
 
 function asProcessableItem(
@@ -135,22 +155,27 @@ async function persistDigest(
       category: story.category,
     }));
 
-    let output: DigestAiOutput;
     try {
-      output = await createDigest(env.AI, { modelId: env.AI_MODEL_ID, stories: input });
+      const output: DigestAiOutput = await createDigest(env.AI, {
+        modelId: env.AI_MODEL_ID,
+        stories: input,
+      });
+      headline = output.headline_zh_hk;
+      intro = output.intro_zh_hk;
+      sections = output.sections.map((section) => ({
+        category: section.category,
+        summaryZhHk: section.summary_zh_hk,
+        storyIds: section.story_ids,
+      }));
+      status = "published";
     } catch (error) {
       errors.push(`Digest: ${errorMessage(error)}`);
-      return null;
+      const partial = partialDigest(stories);
+      headline = partial.headline_zh_hk;
+      intro = partial.intro_zh_hk;
+      sections = partial.sections;
+      status = "partial";
     }
-
-    headline = output.headline_zh_hk;
-    intro = output.intro_zh_hk;
-    sections = output.sections.map((section) => ({
-      category: section.category,
-      summaryZhHk: section.summary_zh_hk,
-      storyIds: section.story_ids,
-    }));
-    status = "published";
   }
 
   const digestId = await upsertDigest(env.DB, {
@@ -324,7 +349,7 @@ export async function runDailyPipeline(
     }
 
     const discoveredAt = now.toISOString();
-    for (const item of fetched.items) {
+    for (const item of limitItemsForIngestion(fetched.items)) {
       try {
         await upsertIngestedItem(env.DB, {
           sourceId: item.sourceId,

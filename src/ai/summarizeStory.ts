@@ -12,19 +12,15 @@ export interface StorySummaryInput {
   canonicalUrl: string;
 }
 
-function responseText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value !== null && typeof value === "object" && "response" in value) {
-    const response = (value as { response?: unknown }).response;
-    if (typeof response === "string") return response;
-  }
-  throw new Error("Workers AI returned no text response");
-}
-
 function parseJsonResponse(value: unknown): unknown {
-  const text = responseText(value).trim();
+  let payload = value;
+  if (value !== null && typeof value === "object" && "response" in value) {
+    payload = (value as { response?: unknown }).response;
+  }
+  if (payload !== null && typeof payload === "object") return payload;
+  if (typeof payload !== "string") throw new Error("Workers AI returned no text response");
   try {
-    return JSON.parse(text) as unknown;
+    return JSON.parse(payload.trim()) as unknown;
   } catch {
     throw new Error("Workers AI returned invalid JSON");
   }

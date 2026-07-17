@@ -50,6 +50,12 @@ describe("summarizeStory", () => {
     );
   });
 
+  it("accepts a structured JSON Mode response", async () => {
+    const run = vi.fn().mockResolvedValue({ response: storyOutput });
+
+    await expect(summarizeStory({ run } as unknown as Ai, aiInput)).resolves.toEqual(storyOutput);
+  });
+
   it("rejects malformed model JSON", async () => {
     const run = vi.fn().mockResolvedValue({ response: "not json" });
 
@@ -90,5 +96,22 @@ describe("createDigest", () => {
         ]),
       }),
     );
+  });
+
+  it("accepts a structured JSON Mode response", async () => {
+    const digestOutput = {
+      headline_zh_hk: "今日人工智能焦點",
+      intro_zh_hk: "以下內容整理今日已核實來源的人工智能新聞。",
+      sections: [
+        {
+          category: "模型與研究",
+          summary_zh_hk: "研究機構公布模型進展。",
+          story_ids: [11],
+        },
+      ],
+    };
+    const run = vi.fn().mockResolvedValue({ response: digestOutput });
+
+    await expect(createDigest({ run } as unknown as Ai, digestInput)).resolves.toEqual(digestOutput);
   });
 });

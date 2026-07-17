@@ -1,8 +1,12 @@
 import { env } from "cloudflare:test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createSource, getEnabledSources } from "../../src/db/repositories/sources";
 
 describe("source repository", () => {
+  beforeEach(async () => {
+    await env.DB.prepare("DELETE FROM sources").run();
+  });
+
   it("creates and reads an enabled source", async () => {
     await createSource(env.DB, {
       name: "Example AI",

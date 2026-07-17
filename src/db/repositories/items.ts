@@ -1,5 +1,7 @@
 import type { IngestedItemWithSource, NewIngestedItem } from "../types";
 
+const MAX_RECENT_NEW_ITEMS = 200;
+
 export async function upsertIngestedItem(
   db: D1Database,
   item: NewIngestedItem,
@@ -44,9 +46,10 @@ export async function getRecentNewItems(
        FROM ingested_items i
        JOIN sources s ON s.id = i.source_id
        WHERE i.status = 'new' AND i.discovered_at >= ?
-       ORDER BY i.published_at DESC, i.id DESC`,
+       ORDER BY i.published_at DESC, i.id DESC
+       LIMIT ?`,
     )
-    .bind(since)
+    .bind(since, MAX_RECENT_NEW_ITEMS)
     .all<IngestedItemWithSource>();
   return result.results;
 }

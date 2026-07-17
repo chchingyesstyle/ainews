@@ -52,12 +52,13 @@ function feedXml(sourceId: number, itemCount = 1): string {
   return `<rss><channel>${items}</channel></rss>`;
 }
 
-function aiForPipeline(options: { failTitles?: string[] } = {}): Ai {
+function aiForPipeline(options: { failTitles?: string[]; failDigest?: boolean } = {}): Ai {
   const run = vi.fn(async (_model: string, input: Record<string, unknown>) => {
     const messages = input.messages as Array<{ role: string; content: string }>;
     const content = messages.find((message) => message.role === "user")?.content ?? "";
 
     if (content.includes("story_id")) {
+      if (options.failDigest) throw new Error("mock digest failure");
       const ids = [...content.matchAll(/"story_id": (\d+)/g)].map((match) => Number(match[1]));
       return {
         response: JSON.stringify({
@@ -214,6 +215,32 @@ describe("runDailyPipeline", () => {
     expect(digest?.status).toBe("partial");
     expect(digest?.intro_zh_hk).toContain("資料");
     expect((ai as unknown as { run: ReturnType<typeof vi.fn> }).run).toHaveBeenCalledTimes(2);
+  });
+
+  it("writes a deterministic partial digest when digest AI output fails validation", async () => {
+    await createSource(env.DB, {
+      name: "Source 1",
+      publisherUrl: "https://publisher.example",
+      feedUrl: "https://feeds.example/source-1.xml",
+      defaultCategory: "模型與研究",
+      language: "en",
+    });
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("api.gdeltproject.org")) return new Response("<rss><channel></channel></rss>");
+      return new Response(feedXml(1, 3));
+    });
+
+    const result = await runDailyPipeline(testEnv(aiForPipeline({ failDigest: true })), {
+      date: "2026-07-17",
+      fetcher,
+    });
+
+    expect(result.status).toBe("partial");
+    expect(result.digestId).not.toBeNull();
+    expect(result.errors).toContain("Digest: mock digest failure");
+    await expect(env.DB.prepare("SELECT status FROM digests WHERE digest_date = ?").bind("2026-07-17").first<{ status: string }>())
+      .resolves.toMatchObject({ status: "partial" });
   });
 
   it("does not write stories, digests, or run rows during a dry run", async () => {
