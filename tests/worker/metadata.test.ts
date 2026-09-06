@@ -66,6 +66,9 @@ describe("HTML metadata", () => {
     expect(body).toContain('<link rel="canonical" href="https://ainews.cchk.uk/story/metadata-story"');
     expect(body).toContain('<meta property="og:locale" content="zh_HK"');
     expect(body).toContain('<meta property="og:type" content="article"');
+    expect(body).toContain('<meta property="og:image" content="https://ainews.cchk.uk/og-image.png"');
+    expect(body).toContain('<meta name="twitter:card" content="summary_large_image"');
+    expect(body).toContain('<meta name="twitter:image" content="https://ainews.cchk.uk/og-image.png"');
     expect(body).toContain("<meta property=\"article:published_time\"");
     expect(body).toContain('"@type":"NewsArticle"');
     expect(body).toContain('"inLanguage":"zh-HK"');

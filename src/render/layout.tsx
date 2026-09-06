@@ -44,18 +44,28 @@ export function renderLayout({
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content={description} />
-        <meta name="theme-color" content="#f4f0e8" />
+        <meta name="theme-color" content="#f4f0e8" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1c1a16" media="(prefers-color-scheme: dark)" />
         <title>{fullTitle}</title>
         <link rel="canonical" href={canonicalUrl} />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta property="og:locale" content="zh_HK" />
         <meta property="og:type" content={ogType} />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:site_name" content="AI 新聞．香港" />
-        <meta name="twitter:card" content="summary" />
+        <meta property="og:image" content="https://ainews.cchk.uk/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="https://ainews.cchk.uk/og-image.png" />
         {publishedAt ? <meta property="article:published_time" content={publishedAt} /> : null}
         {articleJsonLd ? <script type="application/ld+json">{raw(articleJsonLd)}</script> : null}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+TC:wght@600;700&display=swap"
+        />
         <link rel="stylesheet" href="/styles.css" />
         <script src="/client.js" defer></script>
       </head>

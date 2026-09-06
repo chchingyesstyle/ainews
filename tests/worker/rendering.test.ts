@@ -19,4 +19,19 @@ describe("editorial rendering shell", () => {
     expect(html).toContain("正文 &lt;不可當 HTML&gt;");
     expect(html).not.toContain("<不可當 HTML>");
   });
+
+  it("supports light and dark theme colors, webfonts, and a favicon", async () => {
+    const output = await renderLayout({
+      title: "測試",
+      children: "正文",
+    });
+    const html = String(output);
+
+    expect(html).toContain('<meta name="theme-color" content="#f4f0e8" media="(prefers-color-scheme: light)"');
+    expect(html).toContain('<meta name="theme-color" content="#1c1a16" media="(prefers-color-scheme: dark)"');
+    expect(html).toContain(
+      'href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&amp;family=Noto+Serif+TC:wght@600;700&amp;display=swap"',
+    );
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/favicon.svg"');
+  });
 });

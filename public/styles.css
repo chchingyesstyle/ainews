@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   --paper: #f4f0e8;
   --paper-deep: #ebe5d9;
   --ink: #20252a;
@@ -12,6 +12,18 @@
   font-family: var(--sans);
   color: var(--ink);
   background: var(--paper);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1c1a16;
+    --paper-deep: #262320;
+    --ink: #ece7dc;
+    --muted: #9a9488;
+    --line: #3a362f;
+    --accent: #e08469;
+    --accent-dark: #f0a68c;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -92,7 +104,7 @@ h2 { margin-bottom: 0.8rem; font-size: clamp(1.45rem, 2.4vw, 2.25rem); }
 .related-stories { padding-top: 3rem; }
 .archive-page { max-width: 60rem; }
 .search-form { display: flex; gap: 0.5rem; }
-.search-form input { min-width: 0; flex: 1; border: 1px solid var(--line); border-radius: 0; padding: 0.65rem 0.75rem; background: #faf8f3; color: var(--ink); }
+.search-form input { min-width: 0; flex: 1; border: 1px solid var(--line); border-radius: 0; padding: 0.65rem 0.75rem; background: var(--paper-deep); color: var(--ink); }
 .search-form button { border: 1px solid var(--ink); padding: 0.65rem 1.1rem; background: var(--ink); color: var(--paper); cursor: pointer; }
 .search-form button:hover { background: var(--accent-dark); }
 .search-form--large { max-width: 36rem; margin: 1.5rem 0 1rem; }
