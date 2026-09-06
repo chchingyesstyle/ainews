@@ -69,6 +69,28 @@ describe("machine-readable feeds", () => {
     expect(body).toContain("https://publisher.example/story?x=1&amp;y=2");
   });
 
+  it("returns per-category RSS, excluding other categories, and 404s for an unknown category", async () => {
+    await seedStory();
+    const matching = await worker.fetch(
+      new Request("https://ainews.cchk.uk/category/%E7%94%A2%E5%93%81%E8%88%87%E5%85%AC%E5%8F%B8/rss.xml"),
+      env,
+    );
+    const other = await worker.fetch(
+      new Request("https://ainews.cchk.uk/category/%E6%A8%A1%E5%9E%8B%E8%88%87%E7%A0%94%E7%A9%B6/rss.xml"),
+      env,
+    );
+    const invalid = await worker.fetch(new Request("https://ainews.cchk.uk/category/not-a-category/rss.xml"), env);
+    const matchingBody = await matching.text();
+    const otherBody = await other.text();
+
+    expect(matching.status).toBe(200);
+    expect(matching.headers.get("content-type")).toContain("application/rss+xml");
+    expect(matchingBody).toContain("產品消息 &amp; 測試");
+    expect(other.status).toBe(200);
+    expect(otherBody).not.toContain("產品消息 &amp; 測試");
+    expect(invalid.status).toBe(404);
+  });
+
   it("returns only published digest and story URLs in the sitemap", async () => {
     const storyId = await seedStory();
     await upsertDigest(env.DB, {

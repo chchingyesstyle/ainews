@@ -1,10 +1,25 @@
 import { Hono } from "hono";
 
+import { CATEGORIES } from "../render/layout";
+import type { Category, StoryRecord } from "../db/types";
 import {
   getPublishedDigests,
+  getPublishedStoriesByCategory,
   getPublishedStoriesForSitemap,
 } from "../db/repositories/public";
 import type { Env } from "../env";
+
+function decodeParam(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function isCategory(value: string): value is Category {
+  return (CATEGORIES as readonly string[]).includes(value);
+}
 
 function xmlEscape(value: string): string {
   return value
@@ -34,13 +49,9 @@ function response(body: string, contentType: string): Response {
   });
 }
 
-const feeds = new Hono<{ Bindings: Env }>();
-
-feeds.get("/rss.xml", async (c) => {
-  const stories = await getPublishedStoriesForSitemap(c.env.DB, 50);
-  const items = stories.map((story) => {
-    const published = utcDate(story.published_at ?? story.source_published_at);
-    return `
+function rssItem(c: { env: Env }, story: StoryRecord): string {
+  const published = utcDate(story.published_at ?? story.source_published_at);
+  return `
       <item>
         <title>${xmlEscape(story.headline_zh_hk)}</title>
         <link>${xmlEscape(absoluteUrl(c.env, `/story/${encodeURIComponent(story.slug)}`))}</link>
@@ -50,16 +61,46 @@ feeds.get("/rss.xml", async (c) => {
         ${published ? `<pubDate>${xmlEscape(published)}</pubDate>` : ""}
         <source url="${xmlEscape(story.source_url)}">${xmlEscape(story.source_name)}</source>
       </item>`;
-  }).join("");
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
+}
+
+function rssChannel(c: { env: Env }, title: string, description: string, link: string, stories: StoryRecord[]): string {
+  const items = stories.map((story) => rssItem(c, story)).join("");
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>AI 新聞．香港</title>
-    <link>${xmlEscape(absoluteUrl(c.env, "/"))}</link>
-    <description>每日整理全球人工智能新聞的香港繁體中文摘要。</description>
+    <title>${xmlEscape(title)}</title>
+    <link>${xmlEscape(link)}</link>
+    <description>${xmlEscape(description)}</description>
     <language>zh-HK</language>${items}
   </channel>
 </rss>`;
+}
+
+const feeds = new Hono<{ Bindings: Env }>();
+
+feeds.get("/rss.xml", async (c) => {
+  const stories = await getPublishedStoriesForSitemap(c.env.DB, 50);
+  const body = rssChannel(
+    c,
+    "AI 新聞．香港",
+    "每日整理全球人工智能新聞的香港繁體中文摘要。",
+    absoluteUrl(c.env, "/"),
+    stories,
+  );
+  return response(body, "application/rss+xml; charset=UTF-8");
+});
+
+feeds.get("/category/:category/rss.xml", async (c) => {
+  const category = decodeParam(c.req.param("category"));
+  if (!isCategory(category)) return c.json({ error: "Not found" }, 404);
+  const stories = await getPublishedStoriesByCategory(c.env.DB, category, 50);
+  const body = rssChannel(
+    c,
+    `${category}｜AI 新聞．香港`,
+    `「${category}」分類的香港繁體中文人工智能新聞摘要。`,
+    absoluteUrl(c.env, `/category/${encodeURIComponent(category)}`),
+    stories,
+  );
   return response(body, "application/rss+xml; charset=UTF-8");
 });
 

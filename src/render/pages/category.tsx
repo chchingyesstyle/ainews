@@ -8,6 +8,7 @@ export function CategoryPage({ category, stories }: { category: Category; storie
         <p class="eyebrow">分類 archive</p>
         <h1>{category}</h1>
         <p class="page-header__lede">按分類瀏覽已發布的人工智能新聞。</p>
+        <a class="text-link" href={`/category/${encodeURIComponent(category)}/rss.xml`}>訂閱這個分類的 RSS</a>
       </header>
       {stories.length > 0 ? stories.map((story) => <StoryTeaser story={story} key={story.id} />) : <EmptyState message="這個分類暫時沒有文章。" />}
     </section>

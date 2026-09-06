@@ -105,7 +105,9 @@ describe("public HTML routes", () => {
     expect(storyBody).toContain("完整細節請參閱原文");
     expect(storyBody).toContain('href="/tag/Example%20Lab"');
     expect(category.status).toBe(200);
-    expect(await category.text()).toContain("AI 模型研究新進展");
+    const categoryBody = await category.text();
+    expect(categoryBody).toContain("AI 模型研究新進展");
+    expect(categoryBody).toContain('href="/category/%E6%A8%A1%E5%9E%8B%E8%88%87%E7%A0%94%E7%A9%B6/rss.xml"');
   });
 
   it("renders a tag page listing stories that share an entity, and 404s for unknown tags", async () => {
