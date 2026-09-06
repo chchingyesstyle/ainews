@@ -86,13 +86,15 @@ export function StoryTeaser({ story, featured = false }: { story: StoryRecord; f
 
 export function DigestSectionHeading({ category, summary }: { category: Category; summary?: string }) {
   return (
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">分類</p>
-        <h2><a href={categoryHref(category)}>{category}</a></h2>
+    <>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">分類</p>
+          <h2><a href={categoryHref(category)}>{category}</a></h2>
+        </div>
       </div>
       {summary ? <p class="section-heading__summary">{summary}</p> : null}
-    </div>
+    </>
   );
 }
 

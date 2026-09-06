@@ -76,13 +76,13 @@ h2 { margin-bottom: 0.8rem; font-size: clamp(1.45rem, 2.4vw, 2.25rem); }
 .section-heading { padding-bottom: 1rem; border-bottom: 2px solid var(--ink); }
 .section-heading h2 { margin-bottom: 0; }
 .section-heading h2 a { text-decoration: none; }
-.section-heading__summary { max-width: 32rem; margin-bottom: 0; color: var(--muted); font-size: 0.87rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.section-heading__summary { max-width: 46rem; margin: 0.9rem 0 0; color: var(--muted); font-size: 0.9rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .section-heading__count { color: var(--muted); font-size: 0.78rem; }
-.story-teaser { display: grid; grid-template-columns: 14rem minmax(0, 1fr) 12rem; gap: 1.3rem; padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
-.story-teaser h2 { margin: 0; font-size: 1.35rem; }
+.story-teaser { padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
+.story-teaser .story-meta { margin-bottom: 0.6rem; }
+.story-teaser h2 { margin: 0 0 0.5rem; font-size: 1.35rem; }
 .story-teaser h2 a { text-decoration: none; }
-.story-teaser p { margin: 0; color: var(--muted); font-size: 0.9rem; }
-.story-teaser .text-link { align-self: end; justify-self: end; }
+.story-teaser p { margin: 0 0 0.7rem; color: var(--muted); font-size: 0.9rem; max-width: 46rem; }
 .story-meta { display: flex; flex-wrap: wrap; align-content: start; gap: 0.35rem 0.65rem; color: var(--muted); font-size: 0.75rem; line-height: 1.5; }
 .story-meta__source { color: var(--ink); font-weight: 600; }
 .story-meta__category { color: var(--accent); }
@@ -103,7 +103,6 @@ a.digest-calendar__cell:hover { color: var(--accent-dark); }
 .digest-calendar__cell.is-selected { background: var(--accent); color: var(--paper); }
 .digest-calendar__cell--empty { visibility: hidden; }
 .digest-section { padding: 2.8rem 0 0; }
-.digest-section .story-teaser { grid-template-columns: 14rem minmax(0, 1fr) 12rem; }
 .story-page__header { max-width: 52rem; padding-top: 1rem; }
 .story-page__header h1 { font-size: clamp(2.2rem, 5vw, 4.8rem); }
 .story-page__summary { max-width: 42rem; color: var(--muted); font-size: 1.16rem; }
@@ -146,11 +145,6 @@ a.digest-calendar__cell:hover { color: var(--accent-dark); }
   .digest-lead__header, .section-heading { align-items: flex-start; flex-direction: column; gap: 0.8rem; }
   .digest-lead__stories { display: block; }
   .digest-lead__story, .digest-lead__story:nth-child(even) { padding-inline: 0; border-left: 0; }
-  .story-teaser, .digest-section .story-teaser { display: block; }
-  .story-teaser .story-meta { margin-bottom: 0.7rem; }
-  .story-teaser h2 { margin-bottom: 0.6rem; }
-  .story-teaser p { margin-bottom: 0.8rem; }
-  .story-teaser .text-link { display: inline-block; }
   .story-page__body { display: block; }
   .source-panel { margin-top: 2rem; }
   .site-footer { display: block; }
