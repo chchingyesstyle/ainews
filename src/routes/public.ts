@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { CATEGORIES, renderLayout, SITE_NAME } from "../render/layout";
+import { AboutPage } from "../render/pages/about";
 import { CategoryPage } from "../render/pages/category";
 import { DigestPage } from "../render/pages/digest";
 import { HomePage } from "../render/pages/home";
@@ -119,6 +120,18 @@ publicRoutes.get("/category/:category", async (c) => {
       canonicalUrl: siteUrl(c.env, `/category/${encodeURIComponent(category)}`),
       activePath: `/category/${category}`,
       children: CategoryPage({ category, stories }),
+    }),
+  );
+});
+
+publicRoutes.get("/about", async (c) => {
+  return c.html(
+    renderLayout({
+      title: "關於",
+      description: "AI 新聞．香港的編輯原則及更新頻率。",
+      canonicalUrl: siteUrl(c.env, "/about"),
+      activePath: "/about",
+      children: AboutPage(),
     }),
   );
 });

@@ -84,6 +84,7 @@ export function renderLayout({
               <a class={activePath === "/" ? "is-active" : ""} href="/">首頁</a>
               <a class={activePath.startsWith("/digest") ? "is-active" : ""} href="/digest/latest">每日摘要</a>
               <a class={activePath.startsWith("/search") ? "is-active" : ""} href="/search">搜尋</a>
+              <a class={activePath.startsWith("/about") ? "is-active" : ""} href="/about">關於</a>
               <a href="/rss.xml">RSS</a>
             </nav>
           </div>
@@ -98,7 +99,7 @@ export function renderLayout({
         <main id="main-content" class="site-main">{children as Child}</main>
         <footer class="site-footer">
           <div>
-            <p class="eyebrow">編輯方法</p>
+            <p class="eyebrow"><a href="/about">編輯方法</a></p>
             <p>內容由公開 RSS／Atom 來源及 GDELT 發現資料整理；AI 只作摘要，原文請以來源為準。</p>
           </div>
           <p class="site-footer__note">© {new Date().getUTCFullYear()} AI 新聞．香港</p>

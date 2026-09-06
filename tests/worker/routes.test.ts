@@ -132,4 +132,16 @@ describe("public HTML routes", () => {
     const response = await worker.fetch(request("/story/not-found"), env);
     expect(response.status).toBe(404);
   });
+
+  it("renders the about page with editorial principles and a nav link", async () => {
+    const response = await worker.fetch(request("/"), env);
+    const homeBody = await response.text();
+    const about = await worker.fetch(request("/about"), env);
+    const aboutBody = await about.text();
+
+    expect(homeBody).toContain('href="/about"');
+    expect(about.status).toBe(200);
+    expect(aboutBody).toContain("內容由 AI 整理，原文請以來源為準。");
+    expect(aboutBody).toContain("不會加入未提供的事實");
+  });
 });

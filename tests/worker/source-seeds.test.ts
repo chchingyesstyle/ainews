@@ -9,7 +9,7 @@ describe("curated feed seeds", () => {
       )
       .all<{ name: string; feed_url: string; enabled: number }>();
 
-    expect(result.results.length).toBeGreaterThanOrEqual(8);
+    expect(result.results.length).toBeGreaterThanOrEqual(9);
     expect(result.results).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -25,6 +25,11 @@ describe("curated feed seeds", () => {
         expect.objectContaining({
           name: "arXiv cs.AI",
           feed_url: "https://export.arxiv.org/rss/cs.AI",
+          enabled: 1,
+        }),
+        expect.objectContaining({
+          name: "TechNews 科技新報 AI",
+          feed_url: "https://technews.tw/category/ai/feed/",
           enabled: 1,
         }),
       ]),
