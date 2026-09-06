@@ -200,6 +200,26 @@ export async function getPublishedStoriesByIds(
   });
 }
 
+export async function getPublishedDigestDatesInMonth(
+  db: D1Database,
+  year: number,
+  month: number,
+): Promise<string[]> {
+  const start = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-01`;
+  const nextMonthYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const end = `${String(nextMonthYear).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}-01`;
+  const result = await db
+    .prepare(
+      `SELECT digest_date FROM digests
+       WHERE status IN ('published', 'partial') AND digest_date >= ? AND digest_date < ?
+       ORDER BY digest_date ASC`,
+    )
+    .bind(start, end)
+    .all<{ digest_date: string }>();
+  return result.results.map((row) => row.digest_date);
+}
+
 export async function getPublishedDigests(db: D1Database, limit = 5_000): Promise<DigestRecord[]> {
   const result = await db.prepare("SELECT * FROM digests WHERE status IN ('published', 'partial') ORDER BY digest_date DESC LIMIT ?").bind(Math.min(Math.max(Math.floor(limit), 1), 5_000)).all<DigestRecord>();
   return result.results;

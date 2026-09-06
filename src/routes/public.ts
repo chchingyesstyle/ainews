@@ -13,6 +13,7 @@ import {
   getLatestPublishedDigest,
   getLatestPublishedStories,
   getPublishedDigestByDate,
+  getPublishedDigestDatesInMonth,
   getPublishedStoriesByCategory,
   getPublishedStoriesByEntity,
   getPublishedStoryBySlug,
@@ -45,6 +46,17 @@ function isDate(value: string): boolean {
   if (!DATE_PATTERN.test(value)) return false;
   const date = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(date.valueOf()) && date.toISOString().startsWith(value);
+}
+
+const YEAR_MONTH_PATTERN = /^(\d{4})-(\d{2})$/;
+
+function parseYearMonth(value: string | undefined): { year: number; month: number } | null {
+  const match = value ? YEAR_MONTH_PATTERN.exec(value) : null;
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return null;
+  return { year, month };
 }
 
 function notFoundPage(message: string) {
@@ -81,13 +93,18 @@ publicRoutes.get("/digest/:date", async (c) => {
       : null;
   if (!digest) return c.html(notFoundPage("這一天沒有可顯示的每日摘要。"), 404);
   const stories = await getStoriesForDigest(c.env.DB, digest.id);
+  const [digestYear, digestMonth] = digest.digest_date.split("-").map(Number);
+  const requestedMonth = parseYearMonth(c.req.query("calendarMonth"));
+  const calendarYear = requestedMonth?.year ?? digestYear;
+  const calendarMonth = requestedMonth?.month ?? digestMonth;
+  const availableDates = new Set(await getPublishedDigestDatesInMonth(c.env.DB, calendarYear, calendarMonth));
   return c.html(
     renderLayout({
       title: digest.headline_zh_hk,
       description: digest.intro_zh_hk,
       canonicalUrl: siteUrl(c.env, `/digest/${digest.digest_date}`),
       activePath: "/digest",
-      children: DigestPage({ digest, stories }),
+      children: DigestPage({ digest, stories, calendarYear, calendarMonth, availableDates }),
     }),
   );
 });

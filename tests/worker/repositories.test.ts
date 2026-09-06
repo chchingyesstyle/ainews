@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createSource, getEnabledSources } from "../../src/db/repositories/sources";
 import { upsertIngestedItem } from "../../src/db/repositories/items";
 import { createStory } from "../../src/db/repositories/stories";
-import { getPublishedStoriesByEntity, getRelatedPublishedStories } from "../../src/db/repositories/public";
+import { getPublishedStoriesByEntity, getPublishedDigestDatesInMonth, getRelatedPublishedStories } from "../../src/db/repositories/public";
+import { upsertDigest } from "../../src/db/repositories/digests";
 import type { Category, StoryRecord } from "../../src/db/types";
 
 describe("source repository", () => {
@@ -123,5 +124,39 @@ describe("public story repository", () => {
     const related = await getRelatedPublishedStories(env.DB, target, 4);
 
     expect(related.map((story) => story.slug)).toEqual(["older-shared-entity", "newer-no-shared-entity"]);
+  });
+});
+
+describe("public digest repository", () => {
+  beforeEach(async () => {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM digest_stories"),
+      env.DB.prepare("DELETE FROM digests"),
+    ]);
+  });
+
+  async function seedDigest(digestDate: string, status: "published" | "partial" | "failed" = "published"): Promise<void> {
+    await upsertDigest(env.DB, {
+      digestDate,
+      headlineZhHk: `標題 ${digestDate}`,
+      introZhHk: `摘要 ${digestDate}`,
+      sections: [],
+      status,
+      modelId: "@cf/test/model",
+      promptVersion: "test-v1",
+      publishedAt: `${digestDate}T06:00:00.000Z`,
+    });
+  }
+
+  it("returns only published/partial digest dates within the requested month", async () => {
+    await seedDigest("2026-07-05");
+    await seedDigest("2026-07-31", "partial");
+    await seedDigest("2026-07-10", "failed");
+    await seedDigest("2026-06-30");
+    await seedDigest("2026-08-01");
+
+    const dates = await getPublishedDigestDatesInMonth(env.DB, 2026, 7);
+
+    expect(dates).toEqual(["2026-07-05", "2026-07-31"]);
   });
 });

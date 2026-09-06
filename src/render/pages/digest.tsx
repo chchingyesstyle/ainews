@@ -1,7 +1,19 @@
 import type { DigestRecord, StoryRecord } from "../../db/types";
-import { AiDisclosure, DigestSectionHeading, EmptyState, StoryTeaser, formatDigestDate } from "../components";
+import { AiDisclosure, DigestCalendar, DigestSectionHeading, EmptyState, StoryTeaser, formatDigestDate } from "../components";
 
-export function DigestPage({ digest, stories }: { digest: DigestRecord; stories: StoryRecord[] }) {
+export function DigestPage({
+  digest,
+  stories,
+  calendarYear,
+  calendarMonth,
+  availableDates,
+}: {
+  digest: DigestRecord;
+  stories: StoryRecord[];
+  calendarYear: number;
+  calendarMonth: number;
+  availableDates: Set<string>;
+}) {
   let sections: Array<{ category: DigestRecord["status"] extends never ? never : string; summaryZhHk?: string; storyIds?: number[] }> = [];
   try {
     const parsed = JSON.parse(digest.sections_json) as unknown;
@@ -19,6 +31,7 @@ export function DigestPage({ digest, stories }: { digest: DigestRecord; stories:
         <p class="page-header__lede">{digest.intro_zh_hk}</p>
         <AiDisclosure />
       </header>
+      <DigestCalendar year={calendarYear} month={calendarMonth} availableDates={availableDates} selectedDate={digest.digest_date} />
       {sections.length > 0 ? sections.map((section) => {
         const sectionStories = (section.storyIds ?? []).flatMap((id) => {
           const story = byId.get(id);

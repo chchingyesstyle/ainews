@@ -135,6 +135,20 @@ describe("public HTML routes", () => {
     expect(response.status).toBe(404);
   });
 
+  it("renders a digest calendar for the viewed month, and supports navigating to another month", async () => {
+    const july = await worker.fetch(request("/digest/2026-07-17"), env);
+    const augustView = await worker.fetch(request("/digest/2026-07-17?calendarMonth=2026-08"), env);
+    const julyBody = await july.text();
+    const augustBody = await augustView.text();
+
+    expect(july.status).toBe(200);
+    expect(julyBody).toContain('href="/digest/2026-07-17"');
+    expect(julyBody).toContain("2026年7月");
+    expect(augustView.status).toBe(200);
+    expect(augustBody).toContain("2026年8月");
+    expect(augustBody).not.toContain('href="/digest/2026-07-17"');
+  });
+
   it("renders the about page with editorial principles and a nav link", async () => {
     const response = await worker.fetch(request("/"), env);
     const homeBody = await response.text();
