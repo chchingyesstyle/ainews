@@ -11,6 +11,7 @@ export const AI_CATEGORIES: readonly Category[] = [
 
 const MAX_HEADLINE_LENGTH = 200;
 const MAX_SUMMARY_LENGTH = 1_200;
+const MAX_SECTION_SUMMARY_LENGTH = 200;
 const MAX_KEY_FACT_LENGTH = 400;
 const MAX_ENTITY_LENGTH = 120;
 const MAX_ENTITIES = 20;
@@ -123,7 +124,7 @@ function validateDigestSection(
   const record = assertPlainRecord(value, "digest section");
   return {
     category: categoryValue(record, "category"),
-    summary_zh_hk: requiredText(record, "summary_zh_hk", MAX_SUMMARY_LENGTH),
+    summary_zh_hk: requiredText(record, "summary_zh_hk", MAX_SECTION_SUMMARY_LENGTH),
     story_ids: integerArray(record, "story_ids", allowedStoryIds, seenStoryIds),
   };
 }

@@ -86,4 +86,13 @@ describe("validateDigestOutput", () => {
 
     expect(() => validateDigestOutput(value, [11, 12])).toThrow(/duplicate/);
   });
+
+  it("rejects a section summary long enough to break the section-heading layout", () => {
+    const value = {
+      ...validDigest,
+      sections: [{ ...validDigest.sections[0], summary_zh_hk: "字".repeat(201) }],
+    };
+
+    expect(() => validateDigestOutput(value, [11, 12])).toThrow(/summary_zh_hk/);
+  });
 });

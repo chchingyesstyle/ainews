@@ -11,7 +11,7 @@
   "vars": {
     "PUBLIC_SITE_URL": "https://ainews.cchk.uk",
     "AI_MODEL_ID": "@cf/meta/llama-3.2-3b-instruct",
-    "PROMPT_VERSION": "v1"
+    "PROMPT_VERSION": "v2"
   },
   "d1_databases": [
     {
