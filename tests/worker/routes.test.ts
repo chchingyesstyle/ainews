@@ -101,9 +101,21 @@ describe("public HTML routes", () => {
     expect(digest.status).toBe(200);
     expect(await digest.text()).toContain("AI 模型研究新進展");
     expect(story.status).toBe(200);
-    expect(await story.text()).toContain("完整細節請參閱原文");
+    const storyBody = await story.text();
+    expect(storyBody).toContain("完整細節請參閱原文");
+    expect(storyBody).toContain('href="/tag/Example%20Lab"');
     expect(category.status).toBe(200);
     expect(await category.text()).toContain("AI 模型研究新進展");
+  });
+
+  it("renders a tag page listing stories that share an entity, and 404s for unknown tags", async () => {
+    const tag = await worker.fetch(request("/tag/Example%20Lab"), env);
+    const unknownTag = await worker.fetch(request("/tag/%E4%B8%8D%E5%AD%98%E5%9C%A8%E7%9A%84%E5%AF%A6%E9%AB%94"), env);
+
+    expect(tag.status).toBe(200);
+    expect(await tag.text()).toContain("AI 模型研究新進展");
+    expect(unknownTag.status).toBe(200);
+    expect(await unknownTag.text()).toContain("這個主題暫時沒有文章。");
   });
 
   it("supports search results and a clear empty state", async () => {

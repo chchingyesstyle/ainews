@@ -1,8 +1,9 @@
 import type { StoryRecord } from "../../db/types";
-import { AiDisclosure, EmptyState, StoryMeta, StoryTeaser, safeHref, storyFacts } from "../components";
+import { AiDisclosure, EmptyState, EntityTags, StoryMeta, StoryTeaser, safeHref, storyEntities, storyFacts } from "../components";
 
 export function StoryPage({ story, related }: { story: StoryRecord; related: StoryRecord[] }) {
   const facts = storyFacts(story);
+  const entities = storyEntities(story);
   return (
     <article class="story-page section-wrap">
       <header class="story-page__header">
@@ -26,6 +27,12 @@ export function StoryPage({ story, related }: { story: StoryRecord; related: Sto
         </div>
         <AiDisclosure />
       </div>
+      {entities.length > 0 ? (
+        <section class="story-tags" aria-labelledby="story-tags-title">
+          <p class="eyebrow" id="story-tags-title">相關主題</p>
+          <EntityTags entities={entities} />
+        </section>
+      ) : null}
       <section class="related-stories" aria-labelledby="related-title">
         <div class="section-heading"><div><p class="eyebrow">同類文章</p><h2 id="related-title">延伸閱讀</h2></div></div>
         {related.length > 0 ? related.map((item) => <StoryTeaser story={item} key={item.id} />) : <EmptyState message="暫時沒有更多同類文章。" />}

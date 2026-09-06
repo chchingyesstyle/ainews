@@ -6,12 +6,14 @@ import { DigestPage } from "../render/pages/digest";
 import { HomePage } from "../render/pages/home";
 import { SearchPage } from "../render/pages/search";
 import { StoryPage } from "../render/pages/story";
+import { TagPage } from "../render/pages/tag";
 import { renderArticleJsonLd } from "../render/metadata";
 import {
   getLatestPublishedDigest,
   getLatestPublishedStories,
   getPublishedDigestByDate,
   getPublishedStoriesByCategory,
+  getPublishedStoriesByEntity,
   getPublishedStoryBySlug,
   getRelatedPublishedStories,
   getStoriesForDigest,
@@ -20,6 +22,7 @@ import {
 import type { Env } from "../env";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_TAG_LENGTH = 120;
 
 function siteUrl(env: Env, path: string): string {
   return new URL(path, env.PUBLIC_SITE_URL || "https://ainews.cchk.uk").toString();
@@ -116,6 +119,20 @@ publicRoutes.get("/category/:category", async (c) => {
       canonicalUrl: siteUrl(c.env, `/category/${encodeURIComponent(category)}`),
       activePath: `/category/${category}`,
       children: CategoryPage({ category, stories }),
+    }),
+  );
+});
+
+publicRoutes.get("/tag/:name", async (c) => {
+  const name = decodeParam(c.req.param("name"));
+  if (name.length === 0 || name.length > MAX_TAG_LENGTH) return c.html(notFoundPage("這個主題不存在。"), 404);
+  const stories = await getPublishedStoriesByEntity(c.env.DB, name, 50);
+  return c.html(
+    renderLayout({
+      title: name,
+      description: `提及「${name}」的已發布人工智能新聞。`,
+      canonicalUrl: siteUrl(c.env, `/tag/${encodeURIComponent(name)}`),
+      children: TagPage({ name, stories }),
     }),
   );
 });

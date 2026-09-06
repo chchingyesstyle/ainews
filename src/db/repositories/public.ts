@@ -1,10 +1,29 @@
 import type { Category, DigestRecord, StoryRecord } from "../types";
 
 const MAX_RESULTS = 50;
+const RELATED_CANDIDATE_POOL_SIZE = 20;
 
 function limitValue(limit: number, fallback: number): number {
   if (!Number.isFinite(limit) || limit <= 0) return fallback;
   return Math.min(Math.floor(limit), MAX_RESULTS);
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+function parseNamedEntities(json: string): string[] {
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((entity): entity is string => typeof entity === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function countSharedEntities(a: string[], b: string[]): number {
+  const bSet = new Set(b);
+  return a.filter((entity) => bSet.has(entity)).length;
 }
 
 export async function getLatestPublishedDigest(db: D1Database): Promise<DigestRecord | null> {
@@ -118,6 +137,7 @@ export async function getRelatedPublishedStories(
   story: StoryRecord,
   limit = 4,
 ): Promise<StoryRecord[]> {
+  const boundedLimit = limitValue(limit, 4);
   const result = await db
     .prepare(
       `SELECT * FROM stories
@@ -125,7 +145,36 @@ export async function getRelatedPublishedStories(
        ORDER BY published_at DESC, id DESC
        LIMIT ?`,
     )
-    .bind(story.category, story.id, limitValue(limit, 4))
+    .bind(story.category, story.id, RELATED_CANDIDATE_POOL_SIZE)
+    .all<StoryRecord>();
+
+  const targetEntities = parseNamedEntities(story.named_entities_json);
+  const ranked = targetEntities.length === 0
+    ? result.results
+    : [...result.results].sort((a, b) => {
+        const overlapDiff = countSharedEntities(targetEntities, parseNamedEntities(b.named_entities_json))
+          - countSharedEntities(targetEntities, parseNamedEntities(a.named_entities_json));
+        if (overlapDiff !== 0) return overlapDiff;
+        return (b.published_at ?? "").localeCompare(a.published_at ?? "") || b.id - a.id;
+      });
+
+  return ranked.slice(0, boundedLimit);
+}
+
+export async function getPublishedStoriesByEntity(
+  db: D1Database,
+  entity: string,
+  limit = 50,
+): Promise<StoryRecord[]> {
+  const pattern = `%"${escapeLikePattern(entity)}"%`;
+  const result = await db
+    .prepare(
+      `SELECT * FROM stories
+       WHERE status = 'published' AND named_entities_json LIKE ? ESCAPE '\\'
+       ORDER BY published_at DESC, id DESC
+       LIMIT ?`,
+    )
+    .bind(pattern, limitValue(limit, 50))
     .all<StoryRecord>();
   return result.results;
 }

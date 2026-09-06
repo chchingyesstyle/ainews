@@ -38,12 +38,25 @@ export function storyFacts(story: StoryRecord): string[] {
   }
 }
 
+export function storyEntities(story: StoryRecord): string[] {
+  try {
+    const entities = JSON.parse(story.named_entities_json) as unknown;
+    return Array.isArray(entities) ? entities.filter((entity): entity is string => typeof entity === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function storyHref(story: Pick<StoryRecord, "slug">): string {
   return `/story/${encodeURIComponent(story.slug)}`;
 }
 
 export function categoryHref(category: Category): string {
   return `/category/${encodeURIComponent(category)}`;
+}
+
+export function entityHref(entity: string): string {
+  return `/tag/${encodeURIComponent(entity)}`;
 }
 
 export function StoryMeta({ story }: { story: StoryRecord }) {
@@ -80,6 +93,19 @@ export function DigestSectionHeading({ category, summary }: { category: Category
       </div>
       {summary ? <p class="section-heading__summary">{summary}</p> : null}
     </div>
+  );
+}
+
+export function EntityTags({ entities }: { entities: string[] }) {
+  if (entities.length === 0) return null;
+  return (
+    <ul class="entity-tags">
+      {entities.map((entity) => (
+        <li key={entity}>
+          <a class="entity-tag" href={entityHref(entity)}>{entity}</a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
