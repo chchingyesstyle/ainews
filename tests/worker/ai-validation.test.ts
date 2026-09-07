@@ -23,6 +23,13 @@ const validDigest = {
 };
 
 describe("validateStoryOutput", () => {
+  it("rejects untranslated narrative fields while allowing official English entity names", () => {
+    for (const field of ["headline_zh_hk", "summary_zh_hk"]) {
+      expect(() => validateStoryOutput({ ...validStory, [field]: "OpenAI Agents Hacked Another Website" })).toThrow(/Chinese/);
+    }
+    expect(() => validateStoryOutput({ ...validStory, key_facts: ["English only", "模型已公布", "資料有限"] })).toThrow(/Chinese/);
+    expect(validateStoryOutput(validStory).named_entities).toEqual(["OpenAI"]);
+  });
   it("accepts a valid story contract and trims strings", () => {
     const output = validateStoryOutput({
       ...validStory,

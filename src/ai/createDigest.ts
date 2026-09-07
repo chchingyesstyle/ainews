@@ -34,5 +34,12 @@ export async function createDigest(ai: Ai, input: DigestInput): Promise<DigestAi
     max_tokens: 900,
   });
 
-  return validateDigestOutput(parseJsonResponse(result), allowedStoryIds);
+  const output = validateDigestOutput(parseJsonResponse(result), allowedStoryIds);
+  const categories = new Map(input.stories.map((story) => [story.id, story.category]));
+  for (const section of output.sections) {
+    if (section.story_ids.some((id) => categories.get(id) !== section.category)) {
+      throw new Error("Digest section category does not match its stories");
+    }
+  }
+  return output;
 }

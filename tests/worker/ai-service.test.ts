@@ -70,6 +70,15 @@ describe("summarizeStory", () => {
 });
 
 describe("createDigest", () => {
+  it("rejects a section that relabels a product story as research", async () => {
+    const run = vi.fn().mockResolvedValue({ response: {
+      headline_zh_hk: "今日焦點", intro_zh_hk: "本期消息。",
+      sections: [{ category: "模型與研究", summary_zh_hk: "模型消息。", story_ids: [11] }],
+    } });
+    await expect(createDigest({ run } as unknown as Ai, {
+      ...digestInput, stories: [{ ...digestInput.stories[0]!, category: "產品與公司" }],
+    })).rejects.toThrow(/category/);
+  });
   it("sends only validated story fields and validates the response", async () => {
     const digestOutput = {
       headline_zh_hk: "今日人工智能焦點",

@@ -133,11 +133,11 @@ function partialDigest(stories: StoryRecord[]): {
   }
 
   return {
-    headline_zh_hk: "今日人工智能摘要（資料有限）",
-    intro_zh_hk: "今日可供整理的有效新聞資料有限，以下只列出已成功整理的內容；詳情請以來源原文為準。",
+    headline_zh_hk: "每日 AI 新聞摘要",
+    intro_zh_hk: "本期僅提供逐篇摘要，未提供完整總覽。資料及詳情請以來源原文為準。",
     sections: [...grouped.entries()].map(([category, categoryStories]) => ({
       category,
-      summaryZhHk: categoryStories.map((story) => story.headline_zh_hk).join("；").slice(0, 1_200),
+      summaryZhHk: "",
       storyIds: categoryStories.map((story) => story.id),
     })),
   };

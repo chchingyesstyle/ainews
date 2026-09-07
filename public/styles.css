@@ -104,8 +104,34 @@ a.digest-calendar__cell:hover { color: var(--accent-dark); }
 .digest-calendar__cell--empty { visibility: hidden; }
 .digest-page__intro { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; align-items: start; gap: 2.5rem; }
 .digest-page__intro .digest-calendar { width: 100%; margin-top: 0; }
+.digest-page { padding-block: 2.8rem; }
+.digest-page .page-header { padding-bottom: 1.5rem; border-bottom: 0; }
+.digest-page .page-header h1 { font-size: clamp(1.8rem, 3.2vw, 2.8rem); line-height: 1.35; }
+.digest-page__meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; color: var(--muted); font-size: 0.9rem; }
+.digest-page__notice { max-width: 42rem; margin: 1rem 0 0; padding: 0.65rem 0.9rem; border-left: 2px solid var(--accent); background: var(--paper-deep); font-size: 0.9rem; }
+.digest-page .ai-disclosure { margin-top: 1rem; font-size: 0.82rem; }
+.digest-date-picker { display: none; }
+.digest-date-picker > summary { cursor: pointer; padding: 0.6rem 0; color: var(--accent-dark); font-size: 0.9rem; }
+.digest-date-picker > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.digest-overview, .digest-page__stories { max-width: 48rem; }
+.digest-overview { margin-top: 1.5rem; }
+.digest-overview h2 { font-size: 1.3rem; }
+.digest-overview p, .digest-page .section-heading__summary { font-size: 1rem; line-height: 1.85; }
+.digest-page .digest-section { padding-top: 2rem; }
+.digest-page .section-heading { padding-bottom: 0.75rem; border-bottom: 1px solid var(--line); }
+.digest-page .section-heading h2 { font-family: var(--sans); font-size: 1.05rem; font-weight: 600; color: var(--muted); }
+.digest-story { padding: 1.5rem 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.digest-story h3 { margin: 0 0 0.65rem; font: 600 1.35rem/1.5 var(--serif); }
+.digest-story h3 a { text-decoration: none; }
+.digest-story__summary { margin: 0 0 0.9rem; font-size: 1rem; line-height: 1.85; }
+.digest-story__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.9rem; color: var(--muted); font-size: 0.82rem; }
+.digest-story__meta .text-link { font-size: inherit; }
 @media (max-width: 960px) {
-  .digest-page__intro { grid-template-columns: minmax(0, 1fr); gap: 1.8rem; }
+  .digest-page__intro { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .digest-calendar-desktop { display: none; }
+  .digest-date-picker { display: block; }
+  .digest-date-picker .digest-calendar { margin-top: 0.5rem; }
+  .digest-page.section-wrap { padding-block: 1.8rem; }
 }
 .digest-section { padding: 2.8rem 0 0; }
 .story-page__header { max-width: 52rem; padding-top: 1rem; }

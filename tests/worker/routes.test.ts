@@ -146,6 +146,8 @@ describe("public HTML routes", () => {
     expect(julyBody).toContain("2026年7月");
     expect(augustView.status).toBe(200);
     expect(augustBody).toContain("2026年8月");
+    expect(augustBody).toMatch(/<details class="digest-date-picker" open(?:="")?>/);
+    expect(julyBody).not.toMatch(/<details class="digest-date-picker" open/);
     expect(augustBody).not.toContain('href="/digest/2026-07-17"');
   });
 

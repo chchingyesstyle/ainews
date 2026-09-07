@@ -43,6 +43,8 @@ npm test
 npm run build
 ```
 
+每日摘要頁的瀏覽器排版測試另以 `npm run test:layout` 執行；首次需執行 `npx playwright install chromium`。測試涵蓋桌面、平板及手機闊度、完整文字顯示、手機月曆開合及閱讀次序。
+
 `npm run build` 只執行 Wrangler deployment dry-run，不會部署或修改 production。
 
 ## 部署與資料庫
@@ -71,7 +73,7 @@ curl -X POST "https://ainews.cchk.uk/admin/run" \
 
 - `/`：今日 digest lead 和最新文章
 - `/digest/latest`：最新每日摘要
-- `/digest/YYYY-MM-DD`：指定日期摘要，附月曆可瀏覽其他日子（`?calendarMonth=YYYY-MM` 切換月份）
+- `/digest/YYYY-MM-DD`：指定日期摘要，顯示日期及篇數；手機按「選擇日期」展開月曆（`?calendarMonth=YYYY-MM` 切換月份並保留展開）
 - `/story/:slug`：單篇文章及原文連結
 - `/category/:category`：分類 archive
 - `/category/:category/rss.xml`：分類專屬 RSS 2.0 feed
@@ -90,6 +92,8 @@ curl -X POST "https://ainews.cchk.uk/admin/run" \
 - 文章保留原文連結、來源 metadata 和有限 excerpt，不複製完整原文。
 - 每篇內容均顯示「內容由 AI 整理，原文請以來源為準。」
 - AI 輸出必須通過 schema、長度、category、HTML 和 story ID 驗證才可儲存或發佈。
+- 部分完成的每日摘要直接展示文章，不以拼接標題代替總覽。舊版 partial digest 的重複標題串亦不會在摘要頁顯示。
+- Prompt `v3` 說明各分類的適用事件及香港繁中寫作要求；驗證會拒絕沒有中文字的文章敘述，以及分組與文章分類不一致的 digest。這些檢查不能代替事實核對，亦不保證繁中用字或語義分類完全正確；已發佈文章不會自動改寫。
 
 ## 安全提醒
 

@@ -104,7 +104,7 @@ publicRoutes.get("/digest/:date", async (c) => {
       description: digest.intro_zh_hk,
       canonicalUrl: siteUrl(c.env, `/digest/${digest.digest_date}`),
       activePath: "/digest",
-      children: DigestPage({ digest, stories, calendarYear, calendarMonth, availableDates }),
+      children: DigestPage({ digest, stories, calendarYear, calendarMonth, availableDates, calendarExpanded: requestedMonth !== null }),
     }),
   );
 });

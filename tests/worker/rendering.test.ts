@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { renderLayout } from "../../src/render/layout";
 import { StoryPage } from "../../src/render/pages/story";
-import type { StoryRecord } from "../../src/db/types";
+import { DigestPage } from "../../src/render/pages/digest";
+import type { DigestRecord, StoryRecord } from "../../src/db/types";
 
 function buildStory(overrides: Partial<StoryRecord> = {}): StoryRecord {
   return {
@@ -26,6 +27,61 @@ function buildStory(overrides: Partial<StoryRecord> = {}): StoryRecord {
     ...overrides,
   };
 }
+
+function renderDigest(overrides: Partial<DigestRecord> = {}, stories = [buildStory()]) {
+  return String(DigestPage({
+    digest: {
+      id: 1, digest_date: "2026-09-07", headline_zh_hk: "今日人工智能摘要（資料有限）",
+      intro_zh_hk: "舊版資料有限提示", status: "partial",
+      sections_json: JSON.stringify([{ category: "模型與研究", summaryZhHk: "舊版重複標題串", storyIds: [1] }]),
+      model_id: "test", prompt_version: "test", published_at: null, created_at: "", updated_at: "", ...overrides,
+    },
+    stories, calendarYear: 2026, calendarMonth: 9, availableDates: new Set(["2026-09-07"]),
+  }));
+}
+
+describe("digest reading order", () => {
+  it("shows a clear page title and count without a legacy fallback headline list", () => {
+    const html = renderDigest();
+    expect(html).toContain("每日 AI 新聞摘要");
+    expect(html).toContain("1 篇新聞");
+    expect(html).not.toContain("舊版重複標題串");
+    expect(html).not.toContain("舊版資料有限提示");
+    expect(html).not.toContain("（資料有限）");
+    expect(html).not.toContain('>分類<');
+    expect(html).toContain("未提供完整總覽");
+    expect(html).toContain("內容由 AI 整理，原文請以來源為準。");
+    expect(html.indexOf("測試標題")).toBeLessThan(html.indexOf("測試摘要"));
+    expect(html.indexOf("測試摘要")).toBeLessThan(html.indexOf("測試來源"));
+  });
+
+  it("groups by the stored story category, preserving stories missing from a digest section", () => {
+    const html = renderDigest({}, [buildStory(), buildStory({ id: 2, slug: "product", category: "產品與公司", headline_zh_hk: "產品消息" })]);
+    expect(html).toContain("2 篇新聞");
+    expect(html).toContain("產品消息");
+    expect(html).toContain('href="/category/%E7%94%A2%E5%93%81%E8%88%87%E5%85%AC%E5%8F%B8"');
+    expect(html).toContain('<h3>');
+  });
+
+  it("keeps a valid published overview and section summary", () => {
+    const html = renderDigest({ status: "published", headline_zh_hk: "研究新進展", intro_zh_hk: "本期研究總覽", sections_json: JSON.stringify([{ category: "模型與研究", summaryZhHk: "可靠分組摘要", storyIds: [1] }]) });
+    expect(html).toContain("研究新進展");
+    expect(html).toContain("本期研究總覽");
+    expect(html).toContain("可靠分組摘要");
+    expect(html).not.toContain("未提供完整總覽");
+  });
+
+  it("handles malformed section data without losing the linked articles", () => {
+    const html = renderDigest({ status: "published", sections_json: '[null,42,{"storyIds":"bad"}]' });
+    expect(html).toContain("測試標題");
+  });
+
+  it("does not present a mismatched section summary as a product overview", () => {
+    const html = renderDigest({ status: "published" }, [buildStory({ category: "產品與公司" })]);
+    expect(html).not.toContain("舊版重複標題串");
+    expect(html).toContain("測試標題");
+  });
+});
 
 describe("editorial rendering shell", () => {
   it("renders the zh-HK document shell and escapes metadata", async () => {

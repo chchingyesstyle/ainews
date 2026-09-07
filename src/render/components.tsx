@@ -89,8 +89,7 @@ export function DigestSectionHeading({ category, summary }: { category: Category
     <>
       <div class="section-heading">
         <div>
-          <p class="eyebrow">分類</p>
-          <h2><a href={categoryHref(category)}>{category}</a></h2>
+          <h2><a href={categoryHref(category)}>{category === "模型與研究" ? "AI 模型與研究" : category}</a></h2>
         </div>
       </div>
       {summary ? <p class="section-heading__summary">{summary}</p> : null}

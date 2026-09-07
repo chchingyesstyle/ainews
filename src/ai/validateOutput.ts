@@ -51,6 +51,12 @@ function categoryValue(record: PlainRecord, key: string): Category {
   return value as Category;
 }
 
+function chineseNarrative(text: string, key: string): string {
+  // A minimal language gate, not a factual or Traditional Chinese quality check.
+  if (!/\p{Script=Han}/u.test(text)) throw new Error(`${key} must contain Chinese narrative`);
+  return text;
+}
+
 function stringArray(
   record: PlainRecord,
   key: string,
@@ -78,13 +84,13 @@ export function validateStoryOutput(value: unknown): StoryAiOutput {
   const record = assertPlainRecord(value, "story output");
 
   return {
-    headline_zh_hk: requiredText(record, "headline_zh_hk", MAX_HEADLINE_LENGTH),
-    summary_zh_hk: requiredText(record, "summary_zh_hk", MAX_SUMMARY_LENGTH),
+    headline_zh_hk: chineseNarrative(requiredText(record, "headline_zh_hk", MAX_HEADLINE_LENGTH), "headline_zh_hk"),
+    summary_zh_hk: chineseNarrative(requiredText(record, "summary_zh_hk", MAX_SUMMARY_LENGTH), "summary_zh_hk"),
     key_facts: stringArray(record, "key_facts", {
       minLength: 3,
       maxLength: 3,
       itemMaxLength: MAX_KEY_FACT_LENGTH,
-    }),
+    }).map((fact, index) => chineseNarrative(fact, `key_facts[${index}]`)),
     category: categoryValue(record, "category"),
     named_entities: stringArray(record, "named_entities", {
       minLength: 0,

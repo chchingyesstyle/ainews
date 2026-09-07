@@ -100,7 +100,7 @@ function aiForPipeline(options: { failTitles?: string[]; failDigest?: boolean } 
 
     return {
       response: JSON.stringify({
-        headline_zh_hk: title,
+        headline_zh_hk: `測試新聞：${title}`,
         summary_zh_hk: "來源指出相關人工智能進展，詳情以原文為準。",
         key_facts: ["來源已報道相關消息", "資料包括有限背景", "完整內容請參閱原文"],
         category: "模型與研究",
@@ -229,9 +229,12 @@ describe("runDailyPipeline", () => {
     expect(result.storiesPublished).toBe(2);
     const digest = await env.DB.prepare("SELECT * FROM digests WHERE digest_date = ?")
       .bind("2026-07-17")
-      .first<{ status: string; intro_zh_hk: string }>();
+      .first<{ status: string; intro_zh_hk: string; sections_json: string }>();
     expect(digest?.status).toBe("partial");
     expect(digest?.intro_zh_hk).toContain("資料");
+    expect(JSON.parse(digest!.sections_json)).toEqual([
+      expect.objectContaining({ summaryZhHk: "", storyIds: expect.any(Array) }),
+    ]);
     expect((ai as unknown as { run: ReturnType<typeof vi.fn> }).run).toHaveBeenCalledTimes(2);
   });
 
