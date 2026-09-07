@@ -25,13 +25,15 @@ export function DigestPage({
 
   return (
     <article class="digest-page section-wrap">
-      <header class="page-header">
-        <p class="eyebrow">每日摘要 · {formatDigestDate(digest.digest_date)}</p>
-        <h1>{digest.headline_zh_hk}</h1>
-        <p class="page-header__lede">{digest.intro_zh_hk}</p>
-        <AiDisclosure />
-      </header>
-      <DigestCalendar year={calendarYear} month={calendarMonth} availableDates={availableDates} selectedDate={digest.digest_date} />
+      <div class="digest-page__intro">
+        <header class="page-header">
+          <p class="eyebrow">每日摘要 · {formatDigestDate(digest.digest_date)}</p>
+          <h1>{digest.headline_zh_hk}</h1>
+          <p class="page-header__lede">{digest.intro_zh_hk}</p>
+          <AiDisclosure />
+        </header>
+        <DigestCalendar year={calendarYear} month={calendarMonth} availableDates={availableDates} selectedDate={digest.digest_date} />
+      </div>
       {sections.length > 0 ? sections.map((section) => {
         const sectionStories = (section.storyIds ?? []).flatMap((id) => {
           const story = byId.get(id);

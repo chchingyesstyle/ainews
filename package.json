@@ -6,6 +6,7 @@
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run",
     "test": "vitest run",
+    "test:layout": "node --test tests/digest-layout.mjs",
     "typecheck": "tsc --noEmit",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "deploy": "wrangler deploy"
@@ -18,6 +19,8 @@
     "@cloudflare/vitest-pool-workers": "^0.18.6",
     "@cloudflare/workers-types": "^5.20260717.1",
     "@types/node": "^26.1.1",
+    "esbuild": "^0.28.1",
+    "playwright": "^1.63.0",
     "sharp": "^0.35.4",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10",

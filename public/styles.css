@@ -76,7 +76,7 @@ h2 { margin-bottom: 0.8rem; font-size: clamp(1.45rem, 2.4vw, 2.25rem); }
 .section-heading { padding-bottom: 1rem; border-bottom: 2px solid var(--ink); }
 .section-heading h2 { margin-bottom: 0; }
 .section-heading h2 a { text-decoration: none; }
-.section-heading__summary { max-width: 46rem; margin: 0.9rem 0 0; color: var(--muted); font-size: 0.9rem; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+.section-heading__summary { max-width: 46rem; margin: 0.9rem 0 0; color: var(--muted); font-size: 0.9rem; overflow-wrap: anywhere; }
 .section-heading__count { color: var(--muted); font-size: 0.78rem; }
 .story-teaser { padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
 .story-teaser .story-meta { margin-bottom: 0.6rem; }
@@ -102,6 +102,11 @@ a.digest-calendar__cell { color: var(--ink); font-weight: 600; }
 a.digest-calendar__cell:hover { color: var(--accent-dark); }
 .digest-calendar__cell.is-selected { background: var(--accent); color: var(--paper); }
 .digest-calendar__cell--empty { visibility: hidden; }
+.digest-page__intro { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; align-items: start; gap: 2.5rem; }
+.digest-page__intro .digest-calendar { width: 100%; margin-top: 0; }
+@media (max-width: 960px) {
+  .digest-page__intro { grid-template-columns: minmax(0, 1fr); gap: 1.8rem; }
+}
 .digest-section { padding: 2.8rem 0 0; }
 .story-page__header { max-width: 52rem; padding-top: 1rem; }
 .story-page__header h1 { font-size: clamp(2.2rem, 5vw, 4.8rem); }
