@@ -71,10 +71,13 @@ curl -X POST "https://ainews.cchk.uk/admin/run" \
 
 - `/`：今日 digest lead 和最新文章
 - `/digest/latest`：最新每日摘要
-- `/digest/YYYY-MM-DD`：指定日期摘要
+- `/digest/YYYY-MM-DD`：指定日期摘要，附月曆可瀏覽其他日子（`?calendarMonth=YYYY-MM` 切換月份）
 - `/story/:slug`：單篇文章及原文連結
 - `/category/:category`：分類 archive
+- `/category/:category/rss.xml`：分類專屬 RSS 2.0 feed
+- `/tag/:name`：提及該實體（公司、模型、人物等）的文章列表
 - `/search?q=...`：文章搜尋
+- `/about`：編輯原則及更新頻率
 - `/rss.xml`：RSS 2.0 feed
 - `/sitemap.xml`：公開 URL sitemap
 - `/health`：Worker、D1 及最近 pipeline 狀態
@@ -91,6 +94,8 @@ curl -X POST "https://ainews.cchk.uk/admin/run" \
 ## 安全提醒
 
 不要把 GitHub PAT、Cloudflare API token、`ADMIN_TOKEN`、`.env`、`.dev.vars` 或 shell startup files 內的 credentials 提交到 repository、貼到 issue，或輸出到 logs。
+
+Wrangler 會自動讀取 `.env`／`.env.local` 並將其中的變數綁定到 local dev 的 Worker runtime，所以 `.env` 只應存放 Worker／deployment 實際需要的變數（例如 `CLOUDFLARE_API_TOKEN`）。GitHub PAT 存放在另一個 `.gh-credentials` 檔案（已加入 `.gitignore`，Wrangler 不會讀取），只在需要 repository 存取時手動 source。
 
 GitHub Actions 只使用 repository secrets 中的 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。GitHub PAT 只可用於 repository 存取，不應傳入 Worker、D1、前端或 deployment runtime。
 
