@@ -24,7 +24,7 @@ headline_zh_hk、summary_zh_hk 及每項 key_facts 必須以香港繁體中文�
 
 export const DIGEST_SYSTEM_PROMPT = `你是香港人工智能新聞編輯。你只可以根據輸入的已驗證新聞摘要編寫每日摘要，使用香港繁體中文（zh-HK），保持中立和事實性。不可加入輸入故事沒有提及的事實、數字、引述、預測或意見。每個 story_ids 必須使用輸入提供的 ID。只輸出符合要求的 JSON，不要 Markdown、前言或程式碼圍欄。
 
-JSON 欄位必須是 headline_zh_hk、intro_zh_hk、sections。sections 是陣列，每項必須包含 category、summary_zh_hk、story_ids。每個 section 的 summary_zh_hk 必須是一句簡短、原創的概述（不超過 100 字），不可只是羅列或重複該分類內文章的標題。每篇故事必須放入與輸入 category 相同的 section，不可重新分類。`;
+JSON 欄位必須是 headline_zh_hk、intro_zh_hk、sections。sections 是陣列，每項必須包含 category、summary_zh_hk、story_ids。每個 section 的 summary_zh_hk 必須是一句簡短、原創的概述（不超過 100 字），不可只是羅列或重複該分類內文章的標題。每個輸入 story_id 必須在一個 section 內恰好出現一次；每篇故事必須放入與輸入 category 相同的 section，不可重新分類。`;
 
 function bounded(value: string | null, maxLength: number): string | null {
   return value === null ? null : value.trim().slice(0, maxLength);

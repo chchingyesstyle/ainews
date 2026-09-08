@@ -12,6 +12,9 @@ export interface StorySummaryInput {
   canonicalUrl: string;
 }
 
+const MAX_OUTPUT_ATTEMPTS = 2;
+const OUTPUT_RETRY_INSTRUCTION = "上一次輸出未符合指定 JSON schema。請重新檢查所有欄位，只輸出完整 JSON；key_facts 必須正好三項，named_entities 必須是陣列。";
+
 function parseJsonResponse(value: unknown): unknown {
   let payload = value;
   if (value !== null && typeof value === "object" && "response" in value) {
@@ -27,15 +30,31 @@ function parseJsonResponse(value: unknown): unknown {
 }
 
 export async function summarizeStory(ai: Ai, input: StorySummaryInput): Promise<StoryAiOutput> {
-  const result = await ai.run(input.modelId, {
-    messages: [
-      { role: "system", content: STORY_SYSTEM_PROMPT },
-      { role: "user", content: buildStoryPrompt(input) },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.1,
-    max_tokens: 700,
-  });
+  const prompt = buildStoryPrompt(input);
+  let lastOutputError: unknown = null;
 
-  return validateStoryOutput(parseJsonResponse(result));
+  for (let attempt = 0; attempt < MAX_OUTPUT_ATTEMPTS; attempt += 1) {
+    // Retry only malformed model output. Transport or provider errors still fail fast.
+    const result = await ai.run(input.modelId, {
+      messages: [
+        { role: "system", content: STORY_SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: attempt === 0 ? prompt : `${prompt}\n\n${OUTPUT_RETRY_INSTRUCTION}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_tokens: 700,
+    });
+
+    try {
+      return validateStoryOutput(parseJsonResponse(result));
+    } catch (error) {
+      lastOutputError = error;
+      if (attempt === MAX_OUTPUT_ATTEMPTS - 1) throw error;
+    }
+  }
+
+  throw lastOutputError instanceof Error ? lastOutputError : new Error("Workers AI returned invalid story output");
 }

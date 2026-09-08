@@ -62,6 +62,15 @@ describe("summarizeStory", () => {
     await expect(summarizeStory({ run } as unknown as Ai, aiInput)).rejects.toThrow(/JSON/);
   });
 
+  it("retries a malformed model output once and accepts a valid second response", async () => {
+    const run = vi.fn()
+      .mockResolvedValueOnce({ response: JSON.stringify({ ...storyOutput, named_entities: "OpenAI" }) })
+      .mockResolvedValueOnce({ response: JSON.stringify(storyOutput) });
+
+    await expect(summarizeStory({ run } as unknown as Ai, aiInput)).resolves.toEqual(storyOutput);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
   it("propagates a rejected AI call", async () => {
     const run = vi.fn().mockRejectedValue(new Error("AI unavailable"));
 
@@ -70,6 +79,22 @@ describe("summarizeStory", () => {
 });
 
 describe("createDigest", () => {
+  it("rejects a digest that omits an allowed story ID", async () => {
+    const run = vi.fn().mockResolvedValue({ response: JSON.stringify({
+      headline_zh_hk: "今日人工智能焦點", intro_zh_hk: "本期消息。",
+      sections: [{ category: "模型與研究", summary_zh_hk: "研究消息。", story_ids: [11] }],
+    }) });
+    const input = {
+      ...digestInput,
+      stories: [
+        digestInput.stories[0]!,
+        { ...digestInput.stories[0]!, id: 12, headline_zh_hk: "另一篇研究消息" },
+      ],
+    };
+
+    await expect(createDigest({ run } as unknown as Ai, input)).rejects.toThrow(/omitted/);
+  });
+
   it("rejects a section that relabels a product story as research", async () => {
     const run = vi.fn().mockResolvedValue({ response: {
       headline_zh_hk: "今日焦點", intro_zh_hk: "本期消息。",

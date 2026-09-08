@@ -70,7 +70,7 @@ function feedXml(sourceId: number, itemCount = 1): string {
   return `<rss><channel>${items}</channel></rss>`;
 }
 
-function aiForPipeline(options: { failTitles?: string[]; failDigest?: boolean } = {}): Ai {
+function aiForPipeline(options: { failTitles?: string[]; failDigest?: boolean; omitDigestStoryIds?: boolean } = {}): Ai {
   const run = vi.fn(async (_model: string, input: Record<string, unknown>) => {
     const messages = input.messages as Array<{ role: string; content: string }>;
     const content = messages.find((message) => message.role === "user")?.content ?? "";
@@ -86,7 +86,7 @@ function aiForPipeline(options: { failTitles?: string[]; failDigest?: boolean } 
             {
               category: "模型與研究",
               summary_zh_hk: "研究及產品消息見於下列來源。",
-              story_ids: ids,
+              story_ids: options.omitDigestStoryIds ? ids.slice(0, -1) : ids,
             },
           ],
         }),
@@ -262,6 +262,35 @@ describe("runDailyPipeline", () => {
     expect(result.errors).toContain("Digest: mock digest failure");
     await expect(env.DB.prepare("SELECT status FROM digests WHERE digest_date = ?").bind("2026-07-17").first<{ status: string }>())
       .resolves.toMatchObject({ status: "partial" });
+  });
+
+  it("falls back to every published story when digest AI omits one", async () => {
+    await createSource(env.DB, {
+      name: "Source 1",
+      publisherUrl: "https://publisher.example",
+      feedUrl: "https://feeds.example/source-1.xml",
+      defaultCategory: "模型與研究",
+      language: "en",
+    });
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("api.gdeltproject.org")) return new Response("<rss><channel></channel></rss>");
+      return new Response(feedXml(1, 3));
+    });
+
+    const result = await runDailyPipeline(testEnv(aiForPipeline({ omitDigestStoryIds: true })), {
+      date: "2026-07-17",
+      fetcher,
+    });
+
+    expect(result.status).toBe("partial");
+    const digest = await env.DB.prepare("SELECT id, status FROM digests WHERE digest_date = ?")
+      .bind("2026-07-17")
+      .first<{ id: number; status: string }>();
+    expect(digest?.status).toBe("partial");
+    await expect(env.DB.prepare("SELECT COUNT(*) AS count FROM digest_stories WHERE digest_id = ?")
+      .bind(digest?.id)
+      .first<{ count: number }>()).resolves.toMatchObject({ count: 3 });
   });
 
   it("does not write stories, digests, or run rows during a dry run", async () => {

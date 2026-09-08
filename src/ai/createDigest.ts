@@ -41,5 +41,9 @@ export async function createDigest(ai: Ai, input: DigestInput): Promise<DigestAi
       throw new Error("Digest section category does not match its stories");
     }
   }
+  const includedStoryIds = new Set(output.sections.flatMap((section) => section.story_ids));
+  if (includedStoryIds.size !== new Set(allowedStoryIds).size || allowedStoryIds.some((id) => !includedStoryIds.has(id))) {
+    throw new Error("Digest output omitted one or more story IDs");
+  }
   return output;
 }
