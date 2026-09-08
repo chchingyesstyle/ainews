@@ -4,6 +4,7 @@ import { collectFromFeeds, collectFromGdelt, type FeedFetcher } from "../feeds/c
 import type { FeedItem } from "../feeds/types";
 import {
   getRecentNewItems,
+  getRecentRetryableItems,
   markItemSelected,
   pruneExpiredUnreferencedItems,
   upsertIngestedItem,
@@ -18,7 +19,7 @@ import {
   recordSourceSuccess,
 } from "../db/repositories/sources";
 import { finishRun, startRun } from "../db/repositories/runs";
-import type { Category, RunResult, StoryRecord } from "../db/types";
+import type { Category, IngestedItemWithSource, RunResult, StoryRecord } from "../db/types";
 import type { Env } from "../env";
 import { processStory, type ProcessableItem, type PublishedStory } from "./processStory";
 import { selectCandidates } from "./selectCandidates";
@@ -41,6 +42,7 @@ export interface PipelineOptions {
   fetcher?: FeedFetcher;
   gdeltQuery?: string;
   retentionPruner?: RetentionPruner;
+  retryFailedOnly?: boolean;
 }
 
 export interface PipelineResult extends RunResult {
@@ -57,6 +59,10 @@ function errorMessage(error: unknown): string {
 
 function sinceFor(date: string): string {
   return new Date(Date.parse(`${date}T00:00:00.000Z`) - DAY_MS).toISOString();
+}
+
+function retrySinceFor(date: string): string {
+  return new Date(Date.parse(`${date}T00:00:00.000Z`)).toISOString();
 }
 
 function retentionCutoffFor(now: Date): string {
@@ -307,6 +313,7 @@ export async function runDailyPipeline(
   const date = options.date ?? dateFor(now);
   const dryRun = options.dryRun ?? false;
   if (dryRun) return runDryPipeline(env, { ...options, date, dryRun });
+  const retryFailedOnly = options.retryFailedOnly ?? false;
 
   const result: PipelineResult = {
     dryRun: false,
@@ -320,75 +327,99 @@ export async function runDailyPipeline(
     errors: [],
   };
   let runId: number | null = null;
+  let retryableItems: IngestedItemWithSource[] | null = null;
+
+  if (retryFailedOnly) {
+    try {
+      retryableItems = await getRecentRetryableItems(env.DB, retrySinceFor(date));
+      if (retryableItems.length === 0) {
+        const existingDigest = await getDigestByDate(env.DB, date);
+        return {
+          ...result,
+          status: existingDigest?.status === "partial" ? "partial" : existingDigest ? "completed" : "failed",
+          digestId: existingDigest?.id ?? null,
+        };
+      }
+    } catch (error) {
+      result.errors.push(`Retry queue: ${errorMessage(error)}`);
+      return result;
+    }
+  }
 
   try {
     runId = await startRun(env.DB, date);
-    try {
-      const pruneItems = options.retentionPruner ?? pruneExpiredUnreferencedItems;
-      await pruneItems(env.DB, retentionCutoffFor(now));
-    } catch (error) {
-      result.errors.push(`Retention cleanup: ${errorMessage(error)}`);
-    }
-    const sources = await getEnabledSources(env.DB);
-    const fetched = await collectFromFeeds(sources, options.fetcher);
-    result.feedsAttempted = fetched.feedsAttempted;
-    result.feedsSucceeded = fetched.feedsSucceeded;
-    result.itemsDiscovered = fetched.items.length;
-    result.errors.push(...fetched.errors);
-
-    const fetchedAt = now.toISOString();
-    await Promise.all([
-      ...fetched.succeededSourceIds.map((sourceId) => recordSourceSuccess(env.DB, sourceId, fetchedAt)),
-      ...fetched.failedSourceIds.map((sourceId) => recordSourceFailure(env.DB, sourceId, fetchedAt)),
-    ]);
-
-    const gdeltSource =
-      (await getSourceByFeedUrl(env.DB, GDELT_FEED_URL)) ??
-      ({
-        id: await createSource(env.DB, {
-          name: "GDELT",
-          publisherUrl: "https://www.gdeltproject.org",
-          feedUrl: GDELT_FEED_URL,
-          defaultCategory: "模型與研究",
-          language: "multi",
-          enabled: 0,
-        }),
-      } as const);
-    try {
-      const gdeltItems = await collectFromGdelt(options.gdeltQuery ?? GDELT_QUERY, options.fetcher);
-      fetched.items.push(
-        ...gdeltItems.map((item) => ({
-          ...item,
-          sourceId: gdeltSource.id,
-          sourceName: "GDELT",
-          sourcePriority: gdeltSource.id,
-          defaultCategory: "模型與研究" as const,
-        })),
-      );
-      result.itemsDiscovered += gdeltItems.length;
-    } catch (error) {
-      result.errors.push(`GDELT: ${errorMessage(error)}`);
-    }
-
-    const discoveredAt = now.toISOString();
-    for (const item of limitItemsForIngestion(fetched.items)) {
+    if (!retryFailedOnly) {
       try {
-        await upsertIngestedItem(env.DB, {
-          sourceId: item.sourceId,
-          guid: item.guid,
-          canonicalUrl: item.canonicalUrl,
-          title: item.title,
-          sourceExcerpt: item.excerpt,
-          publishedAt: item.publishedAt,
-          discoveredAt,
-          titleHash: item.titleHash,
-        });
+        const pruneItems = options.retentionPruner ?? pruneExpiredUnreferencedItems;
+        await pruneItems(env.DB, retentionCutoffFor(now));
       } catch (error) {
-        result.errors.push(`Item ${item.title}: ${errorMessage(error)}`);
+        result.errors.push(`Retention cleanup: ${errorMessage(error)}`);
       }
+      const sources = await getEnabledSources(env.DB);
+      const fetched = await collectFromFeeds(sources, options.fetcher);
+      result.feedsAttempted = fetched.feedsAttempted;
+      result.feedsSucceeded = fetched.feedsSucceeded;
+      result.itemsDiscovered = fetched.items.length;
+      result.errors.push(...fetched.errors);
+
+      const fetchedAt = now.toISOString();
+      await Promise.all([
+        ...fetched.succeededSourceIds.map((sourceId) => recordSourceSuccess(env.DB, sourceId, fetchedAt)),
+        ...fetched.failedSourceIds.map((sourceId) => recordSourceFailure(env.DB, sourceId, fetchedAt)),
+      ]);
+
+      const gdeltSource =
+        (await getSourceByFeedUrl(env.DB, GDELT_FEED_URL)) ??
+        ({
+          id: await createSource(env.DB, {
+            name: "GDELT",
+            publisherUrl: "https://www.gdeltproject.org",
+            feedUrl: GDELT_FEED_URL,
+            defaultCategory: "模型與研究",
+            language: "multi",
+            enabled: 0,
+          }),
+        } as const);
+      try {
+        const gdeltItems = await collectFromGdelt(options.gdeltQuery ?? GDELT_QUERY, options.fetcher);
+        fetched.items.push(
+          ...gdeltItems.map((item) => ({
+            ...item,
+            sourceId: gdeltSource.id,
+            sourceName: "GDELT",
+            sourcePriority: gdeltSource.id,
+            defaultCategory: "模型與研究" as const,
+          })),
+        );
+        result.itemsDiscovered += gdeltItems.length;
+      } catch (error) {
+        result.errors.push(`GDELT: ${errorMessage(error)}`);
+      }
+
+      const discoveredAt = now.toISOString();
+      for (const item of limitItemsForIngestion(fetched.items)) {
+        try {
+          await upsertIngestedItem(env.DB, {
+            sourceId: item.sourceId,
+            guid: item.guid,
+            canonicalUrl: item.canonicalUrl,
+            title: item.title,
+            sourceExcerpt: item.excerpt,
+            publishedAt: item.publishedAt,
+            discoveredAt,
+            titleHash: item.titleHash,
+          });
+        } catch (error) {
+          result.errors.push(`Item ${item.title}: ${errorMessage(error)}`);
+        }
+      }
+    } else {
+      result.itemsDiscovered = retryableItems?.length ?? 0;
     }
 
-    const stored = await getRecentNewItems(env.DB, sinceFor(date));
+    const stored = retryFailedOnly
+      ? retryableItems ?? []
+      : await getRecentNewItems(env.DB, sinceFor(date));
     const candidates = selectCandidates(stored.map(storedItemToFeedItem));
     result.storiesSelected = candidates.length;
     await Promise.all(

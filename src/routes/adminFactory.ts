@@ -35,18 +35,22 @@ export function createAdminRoutes(runPipeline: PipelineRunner = runDailyPipeline
       return c.json({ error: "Request body must be an object" }, 400);
     }
 
-    const input = body as { date?: unknown; dryRun?: unknown };
+    const input = body as { date?: unknown; dryRun?: unknown; retryFailedOnly?: unknown };
     if (input.date !== undefined && !validDate(input.date)) {
       return c.json({ error: "Invalid date" }, 400);
     }
     if (input.dryRun !== undefined && typeof input.dryRun !== "boolean") {
       return c.json({ error: "dryRun must be boolean" }, 400);
     }
+    if (input.retryFailedOnly !== undefined && typeof input.retryFailedOnly !== "boolean") {
+      return c.json({ error: "retryFailedOnly must be boolean" }, 400);
+    }
 
     try {
       const result = await runPipeline(c.env, {
         ...(input.date === undefined ? {} : { date: input.date }),
         ...(input.dryRun === undefined ? {} : { dryRun: input.dryRun }),
+        ...(input.retryFailedOnly === undefined ? {} : { retryFailedOnly: input.retryFailedOnly }),
       });
       return c.json(result, result.status === "failed" ? 500 : 200);
     } catch {

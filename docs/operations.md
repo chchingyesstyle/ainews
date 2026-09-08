@@ -79,7 +79,16 @@ curl -X POST "http://localhost:8787/admin/run" \
   --data '{"date":"2026-07-17","dryRun":true}'
 ```
 
-正式手動執行前，先使用 dry run；確認來源和 AI 輸出後才使用 `dryRun:false`。每日 Cron 設定為 `0 6 * * *`，即 UTC 06:00／香港 14:00。
+正式手動執行前，先使用 dry run；確認來源和 AI 輸出後才使用 `dryRun:false`。每日主 Cron 設定為 `0 6 * * *`，即 UTC 06:00／香港 14:00；`30 6 * * *`（香港 14:30）會執行一次 recovery retry。recovery 只會重試當日已標記為 `selected` 或 `failed` 的 ingestion rows，不會重新擷取 feed 或處理未選取的新文章。
+
+如需手動重試同一 UTC 日期的失敗文章，可在確認範圍後使用：
+
+```bash
+curl -X POST "http://localhost:8787/admin/run" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  --data '{"date":"2026-07-17","retryFailedOnly":true}'
+```
 
 ## 5. 檢查 pipeline
 

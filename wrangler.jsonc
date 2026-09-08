@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "triggers": {
-    "crons": ["0 6 * * *"]
+    "crons": ["0 6 * * *", "30 6 * * *"]
   },
   "vars": {
     "PUBLIC_SITE_URL": "https://ainews.cchk.uk",

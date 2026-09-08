@@ -58,4 +58,14 @@ describe("POST /admin/run", () => {
     expect(response.status).toBe(200);
     expect(mockedRun).toHaveBeenCalledWith(adminEnv, { date: "2026-07-17", dryRun: true });
   });
+
+  it("supports an authenticated retry-only run", async () => {
+    const response = await adminApp.fetch(
+      request("POST", JSON.stringify({ date: "2026-07-17", retryFailedOnly: true }), "secret-token"),
+      adminEnv,
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedRun).toHaveBeenCalledWith(adminEnv, { date: "2026-07-17", retryFailedOnly: true });
+  });
 });

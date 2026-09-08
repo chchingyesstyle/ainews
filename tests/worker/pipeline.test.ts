@@ -205,6 +205,49 @@ describe("runDailyPipeline", () => {
       .resolves.toMatchObject({ status: "partial" });
   });
 
+  it("reprocesses selected or failed stories without fetching new feeds", async () => {
+    await createSource(env.DB, {
+      name: "Source 1",
+      publisherUrl: "https://publisher.example",
+      feedUrl: "https://feeds.example/source-1.xml",
+      defaultCategory: "模型與研究",
+      language: "en",
+    });
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("api.gdeltproject.org")) return new Response("<rss><channel></channel></rss>");
+      return new Response(feedXml(1, 3).replace("AI story 101", "AI story failure"));
+    });
+
+    const first = await runDailyPipeline(testEnv(aiForPipeline({ failTitles: ["failure"] })), {
+      date: "2026-07-17",
+      fetcher,
+    });
+    expect(first.status).toBe("partial");
+    expect(first.storiesPublished).toBe(2);
+
+    const retryFetcher = vi.fn(async () => {
+      throw new Error("retry pass must not fetch feeds");
+    });
+    const retry = await runDailyPipeline(testEnv(aiForPipeline()), {
+      date: "2026-07-17",
+      retryFailedOnly: true,
+      fetcher: retryFetcher,
+    });
+
+    expect(retry.status).toBe("completed");
+    expect(retry.storiesSelected).toBe(1);
+    expect(retry.storiesPublished).toBe(1);
+    expect(retryFetcher).not.toHaveBeenCalled();
+    const digest = await env.DB.prepare("SELECT id, status FROM digests WHERE digest_date = ?")
+      .bind("2026-07-17")
+      .first<{ id: number; status: string }>();
+    expect(digest?.status).toBe("published");
+    await expect(env.DB.prepare("SELECT COUNT(*) AS count FROM digest_stories WHERE digest_id = ?")
+      .bind(digest?.id)
+      .first<{ count: number }>()).resolves.toMatchObject({ count: 3 });
+  });
+
   it("writes a deterministic partial digest when fewer than three stories are valid", async () => {
     await createSource(env.DB, {
       name: "Source 1",

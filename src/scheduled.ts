@@ -7,6 +7,9 @@ export type ScheduledPipelineRunner = (
   options?: PipelineOptions,
 ) => Promise<PipelineResult>;
 
+export const DAILY_CRON = "0 6 * * *";
+export const RETRY_CRON = "30 6 * * *";
+
 export function scheduledHandler(
   controller: ScheduledController,
   env: Env,
@@ -14,5 +17,7 @@ export function scheduledHandler(
   runPipeline: ScheduledPipelineRunner = runDailyPipeline,
 ): void {
   const date = new Date(controller.scheduledTime).toISOString().slice(0, 10);
-  ctx.waitUntil(runPipeline(env, { date }));
+  const options: PipelineOptions = { date };
+  if (controller.cron === RETRY_CRON) options.retryFailedOnly = true;
+  ctx.waitUntil(runPipeline(env, options));
 }

@@ -3,6 +3,27 @@ import type { IngestedItemWithSource, NewIngestedItem } from "../types";
 const MAX_RECENT_NEW_ITEMS = 200;
 const MAX_RETENTION_DELETE_ITEMS = 500;
 
+const RECENT_ITEM_SELECT = `SELECT i.*, s.name AS source_name, s.id AS source_priority, s.default_category AS default_category
+       FROM ingested_items i
+       JOIN sources s ON s.id = i.source_id`;
+
+async function getRecentItems(
+  db: D1Database,
+  since: string,
+  statusClause: string,
+): Promise<IngestedItemWithSource[]> {
+  const result = await db
+    .prepare(
+      `${RECENT_ITEM_SELECT}
+       WHERE ${statusClause} AND i.discovered_at >= ?
+       ORDER BY i.published_at DESC, i.id DESC
+       LIMIT ?`,
+    )
+    .bind(since, MAX_RECENT_NEW_ITEMS)
+    .all<IngestedItemWithSource>();
+  return result.results;
+}
+
 export async function upsertIngestedItem(
   db: D1Database,
   item: NewIngestedItem,
@@ -41,22 +62,21 @@ export async function getRecentNewItems(
   db: D1Database,
   since: string,
 ): Promise<IngestedItemWithSource[]> {
-  const result = await db
-    .prepare(
-      `SELECT i.*, s.name AS source_name, s.id AS source_priority, s.default_category AS default_category
-       FROM ingested_items i
-       JOIN sources s ON s.id = i.source_id
-       WHERE i.status = 'new' AND i.discovered_at >= ?
-       ORDER BY i.published_at DESC, i.id DESC
-       LIMIT ?`,
-    )
-    .bind(since, MAX_RECENT_NEW_ITEMS)
-    .all<IngestedItemWithSource>();
-  return result.results;
+  return getRecentItems(db, since, "i.status = 'new'");
+}
+
+export async function getRecentRetryableItems(
+  db: D1Database,
+  since: string,
+): Promise<IngestedItemWithSource[]> {
+  return getRecentItems(db, since, "i.status IN ('selected', 'failed')");
 }
 
 export async function markItemSelected(db: D1Database, itemId: number): Promise<void> {
-  await db.prepare(`UPDATE ingested_items SET status = 'selected' WHERE id = ?`).bind(itemId).run();
+  await db
+    .prepare(`UPDATE ingested_items SET status = 'selected', last_error = NULL WHERE id = ?`)
+    .bind(itemId)
+    .run();
 }
 
 export async function markItemPublished(db: D1Database, itemId: number): Promise<void> {
