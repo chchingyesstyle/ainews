@@ -22,7 +22,7 @@ describe("Cloudflare deployment configuration", () => {
     expect(config).toContain('"name": "ainews-hk"');
     expect(config).toContain('"binding": "DB"');
     expect(config).toContain('"binding": "AI"');
-    expect(config).toContain('"AI_MODEL_ID": "@cf/meta/llama-3.2-3b-instruct"');
+    expect(config).toContain('"AI_MODEL_ID": "@cf/google/gemma-4-26b-a4b-it"');
     expect(config).toContain('"0 6 * * *"');
     expect(config).toContain('"directory": "./public"');
     expect(config).toContain("ainews.cchk.uk");

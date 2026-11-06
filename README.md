@@ -2,7 +2,7 @@
 
 [AI 新聞．香港](https://ainews.cchk.uk) 是一個部署在 Cloudflare Workers 的香港繁體中文 AI 新聞網站。系統每日從免費的 RSS／Atom 來源擷取全球人工智能消息，以 Cloudflare Workers AI 整理成中立、事實為本的摘要，並把來源、文章、每日摘要及執行紀錄儲存在 Cloudflare D1。
 
-網站由同一個 Worker 提供 server-rendered HTML、搜尋、RSS、sitemap 和 health endpoint，不需要另設傳統伺服器。現行 Workers AI model binding 使用 `@cf/meta/llama-3.2-3b-instruct`。
+網站由同一個 Worker 提供 server-rendered HTML、搜尋、RSS、sitemap 和 health endpoint，不需要另設傳統伺服器。現行 Workers AI model binding 使用 `@cf/google/gemma-4-26b-a4b-it`（呼叫時關閉 reasoning，以免思考內容耗盡輸出 token）。
 
 ## 系統組成
 

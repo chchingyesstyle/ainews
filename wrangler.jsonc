@@ -10,7 +10,7 @@
   },
   "vars": {
     "PUBLIC_SITE_URL": "https://ainews.cchk.uk",
-    "AI_MODEL_ID": "@cf/meta/llama-3.2-3b-instruct",
+    "AI_MODEL_ID": "@cf/google/gemma-4-26b-a4b-it",
     "PROMPT_VERSION": "v4"
   },
   "d1_databases": [

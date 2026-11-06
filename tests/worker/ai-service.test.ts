@@ -71,6 +71,35 @@ describe("summarizeStory", () => {
     expect(run).toHaveBeenCalledTimes(2);
   });
 
+  it("accepts an OpenAI-style chat completion response", async () => {
+    const run = vi.fn().mockResolvedValue({
+      object: "chat.completion",
+      choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(storyOutput) }, finish_reason: "stop" }],
+    });
+
+    await expect(summarizeStory({ run } as unknown as Ai, aiInput)).resolves.toEqual(storyOutput);
+  });
+
+  it("disables model reasoning so the token budget goes to the JSON answer", async () => {
+    const run = vi.fn().mockResolvedValue({ response: JSON.stringify(storyOutput) });
+    await summarizeStory({ run } as unknown as Ai, aiInput);
+
+    expect(run).toHaveBeenCalledWith(
+      "@cf/test/model",
+      expect.objectContaining({ chat_template_kwargs: { enable_thinking: false } }),
+    );
+  });
+
+  it("rejects a chat completion truncated before any answer content", async () => {
+    const run = vi.fn().mockResolvedValue({
+      object: "chat.completion",
+      choices: [{ index: 0, message: { role: "assistant", content: "", reasoning_content: "thinking..." }, finish_reason: "length" }],
+    });
+
+    await expect(summarizeStory({ run } as unknown as Ai, aiInput)).rejects.toThrow(/truncated/);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
   it("propagates a rejected AI call", async () => {
     const run = vi.fn().mockRejectedValue(new Error("AI unavailable"));
 
@@ -147,5 +176,32 @@ describe("createDigest", () => {
     const run = vi.fn().mockResolvedValue({ response: digestOutput });
 
     await expect(createDigest({ run } as unknown as Ai, digestInput)).resolves.toEqual(digestOutput);
+  });
+
+  it("accepts an OpenAI-style chat completion response with reasoning disabled", async () => {
+    const digestOutput = {
+      headline_zh_hk: "今日人工智能焦點",
+      intro_zh_hk: "以下內容整理今日已核實來源的人工智能新聞。",
+      sections: [{ category: "模型與研究", summary_zh_hk: "研究機構公布模型進展。", story_ids: [11] }],
+    };
+    const run = vi.fn().mockResolvedValue({
+      object: "chat.completion",
+      choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(digestOutput) }, finish_reason: "stop" }],
+    });
+
+    await expect(createDigest({ run } as unknown as Ai, digestInput)).resolves.toEqual(digestOutput);
+    expect(run).toHaveBeenCalledWith(
+      "@cf/test/model",
+      expect.objectContaining({ chat_template_kwargs: { enable_thinking: false } }),
+    );
+  });
+
+  it("rejects a digest chat completion truncated before any answer content", async () => {
+    const run = vi.fn().mockResolvedValue({
+      object: "chat.completion",
+      choices: [{ index: 0, message: { role: "assistant", content: "", reasoning_content: "thinking..." }, finish_reason: "length" }],
+    });
+
+    await expect(createDigest({ run } as unknown as Ai, digestInput)).rejects.toThrow(/truncated/);
   });
 });
